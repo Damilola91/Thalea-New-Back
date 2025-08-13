@@ -2,9 +2,9 @@ const express = require("express");
 const booking = express.Router();
 const BookingModel = require("../models/BookingModel");
 const ApartmentModel = require("../models/ApartmentModel");
+const OrderModel = require("../models/OrderModel");
 
-// POST /booking/check-availability
-booking.post("/booking/check-availability", async (req, res) => {
+booking.post("/booking/check-availability", async (req, res, next) => {
   try {
     const { checkIn, checkOut, guestsCount } = req.body;
 
@@ -60,6 +60,61 @@ booking.post("/booking/check-availability", async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Errore server", error: error.message });
+  }
+});
+
+booking.post("/booking/complete", async (req, res, next) => {
+  try {
+    const {
+      apartment,
+      guestName,
+      guestEmail,
+      guestPhone,
+      checkIn,
+      checkOut,
+      guestsCount,
+    } = req.body;
+
+    // Controlli sui campi obbligatori
+    if (
+      !apartment ||
+      !guestName ||
+      !guestEmail ||
+      !checkIn ||
+      !checkOut ||
+      !guestsCount
+    ) {
+      return res.status(400).json({
+        message:
+          "I campi obbligatori sono: apartment, guestName, guestEmail, checkIn, checkOut e guestsCount",
+      });
+    }
+
+    // Verifica che l'appartamento esista
+    const apartmentExists = await ApartmentModel.findById(apartment);
+    if (!apartmentExists) {
+      return res.status(404).json({ message: "Appartamento non trovato" });
+    }
+
+    // Creazione della prenotazione
+    const newBooking = new BookingModel({
+      apartment,
+      guestName,
+      guestEmail,
+      guestPhone,
+      checkIn: new Date(checkIn),
+      checkOut: new Date(checkOut),
+      guestsCount,
+    });
+
+    const savedBooking = await newBooking.save();
+
+    res.status(201).json({
+      message: "Prenotazione completata con successo",
+      booking: savedBooking,
+    });
+  } catch (error) {
+    next(error);
   }
 });
 
