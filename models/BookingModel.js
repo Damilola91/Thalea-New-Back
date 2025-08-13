@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const { v4: uuidv4 } = require("uuid");
+const ApartmentModel = require("../models/ApartmentModel"); // Import modello Apartment
 
 const BookingSchema = new mongoose.Schema(
   {
@@ -8,51 +9,21 @@ const BookingSchema = new mongoose.Schema(
       ref: "Apartment",
       required: true,
     },
-    guestName: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    guestEmail: {
-      type: String,
-      required: true,
-      lowercase: true,
-      trim: true,
-    },
-    guestPhone: {
-      type: String,
-      trim: true,
-    },
-    checkIn: {
-      type: Date,
-      required: true,
-    },
-    checkOut: {
-      type: Date,
-      required: true,
-    },
-    guestsCount: {
-      type: Number,
-      required: true,
-      min: 1,
-    },
-    totalPrice: {
-      type: Number,
-      required: true,
-    },
+    guestName: { type: String, required: true, trim: true },
+    guestEmail: { type: String, required: true, lowercase: true, trim: true },
+    guestPhone: { type: String, trim: true },
+    checkIn: { type: Date, required: true },
+    checkOut: { type: Date, required: true },
+    guestsCount: { type: Number, required: true, min: 1 },
+    nights: { type: Number, required: true },
+    totalPrice: { type: Number, required: true },
     status: {
       type: String,
       enum: ["pending", "confirmed", "cancelled"],
       default: "pending",
     },
-    notes: {
-      type: String,
-      trim: true,
-    },
-    bookingCode: {
-      type: String,
-      unique: true,
-    },
+    notes: { type: String, trim: true },
+    bookingCode: { type: String, unique: true },
   },
   {
     timestamps: true,
@@ -60,22 +31,18 @@ const BookingSchema = new mongoose.Schema(
   }
 );
 
-// Pre-save: genera un bookingCode se non esiste
+// Pre-save: genera bookingCode, calcola notti e totalPrice
 BookingSchema.pre("save", async function (next) {
+  // Genera bookingCode se non esiste
   if (!this.bookingCode) {
     this.bookingCode = uuidv4();
   }
 
-  // Controllo sovrapposizione date
+  // Controllo sovrapposizione date con Booking esistente
   const overlappingBooking = await mongoose.model("Booking").findOne({
     apartment: this.apartment,
-    status: { $ne: "cancelled" }, // Ignora prenotazioni annullate
-    $or: [
-      {
-        checkIn: { $lt: this.checkOut },
-        checkOut: { $gt: this.checkIn },
-      },
-    ],
+    status: { $ne: "cancelled" },
+    $or: [{ checkIn: { $lt: this.checkOut }, checkOut: { $gt: this.checkIn } }],
   });
 
   if (overlappingBooking) {
@@ -84,6 +51,26 @@ BookingSchema.pre("save", async function (next) {
         "Le date selezionate sono già occupate per questo appartamento."
       )
     );
+  }
+
+  // Calcolo numero di notti (almeno 1)
+  const diffTime = this.checkOut - this.checkIn;
+  const nights = Math.max(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 1);
+  this.nights = nights;
+
+  // Recupera prezzo dell'appartamento
+  const apartment = await ApartmentModel.findById(this.apartment);
+  if (apartment && apartment.pricePerNight) {
+    this.totalPrice = Math.round(nights * apartment.pricePerNight * 100) / 100;
+  }
+
+  // Aggiorna bookedDates dell'appartamento
+  if (apartment) {
+    apartment.bookedDates.push({
+      start: this.checkIn,
+      end: this.checkOut,
+    });
+    await apartment.save();
   }
 
   next();
