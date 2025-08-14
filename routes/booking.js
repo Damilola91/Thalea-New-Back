@@ -2,7 +2,9 @@ const express = require("express");
 const booking = express.Router();
 const BookingModel = require("../models/BookingModel");
 const ApartmentModel = require("../models/ApartmentModel");
+const sendBookingConfirmationEmail = require("../utils/emailService");
 const OrderModel = require("../models/OrderModel");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 booking.post("/booking/check-availability", async (req, res, next) => {
   try {
@@ -58,8 +60,7 @@ booking.post("/booking/check-availability", async (req, res, next) => {
 
     return res.json(results);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Errore server", error: error.message });
+    next(error);
   }
 });
 
@@ -114,6 +115,78 @@ booking.post("/booking/complete", async (req, res, next) => {
       booking: savedBooking,
     });
   } catch (error) {
+    next(error);
+  }
+});
+
+booking.post("/booking/confirm", async (req, res, next) => {
+  try {
+    const { paymentIntentId, orderId } = req.body;
+
+    // Controllo campi obbligatori
+    if (!paymentIntentId || !orderId) {
+      return res.status(400).json({ error: "Dati mancanti nella richiesta" });
+    }
+
+    // Recupera l'ordine dal DB
+    const order = await OrderModel.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: "Ordine non trovato" });
+    }
+
+    // Evita conferme doppie
+    if (order.status === "paid") {
+      return res.status(400).json({ error: "Ordine già pagato" });
+    }
+
+    // Recupera il PaymentIntent da Stripe
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    if (!paymentIntent) {
+      return res.status(404).json({ error: "Pagamento non trovato" });
+    }
+
+    // Controlla stato del pagamento
+    if (paymentIntent.status !== "succeeded") {
+      return res.status(400).json({
+        error: "Pagamento non riuscito",
+        stripeStatus: paymentIntent.status,
+      });
+    }
+
+    // Aggiorna lo status dell'ordine
+    order.status = "paid";
+    await order.save();
+
+    // Recupera la prenotazione associata
+    const bookingRecord = await BookingModel.findById(order.bookingId);
+    if (!bookingRecord) {
+      return res.status(404).json({ error: "Prenotazione non trovata" });
+    }
+
+    // Aggiorna lo status della prenotazione
+    bookingRecord.status = "confirmed";
+    const savedBooking = await bookingRecord.save();
+
+    // Invia email di conferma
+    await sendBookingConfirmationEmail(
+      savedBooking.guestEmail,
+      savedBooking.guestName,
+      savedBooking.apartment,
+      savedBooking.checkIn,
+      savedBooking.checkOut,
+      savedBooking.guestsCount,
+      savedBooking.totalPrice,
+      savedBooking.bookingCode
+    );
+
+    // Risposta al client
+    res.status(200).json({
+      message: "Pagamento completato e prenotazione confermata",
+      booking: savedBooking,
+      stripeStatus: paymentIntent.status,
+    });
+  } catch (error) {
+    console.error("Errore conferma pagamento:", error);
     next(error);
   }
 });
