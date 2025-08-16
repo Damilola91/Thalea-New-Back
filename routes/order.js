@@ -2,6 +2,7 @@ const express = require("express");
 const order = express.Router();
 const OrderModel = require("../models/OrderModel");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const BookingModel = require("../models/BookingModel");
 
 const enumPaymentMethod = ["card"];
 

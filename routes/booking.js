@@ -76,7 +76,7 @@ booking.post("/booking/complete", async (req, res, next) => {
       guestsCount,
     } = req.body;
 
-    // Controlli sui campi obbligatori
+    // Controlli campi obbligatori
     if (
       !apartment ||
       !guestName ||
@@ -92,12 +92,20 @@ booking.post("/booking/complete", async (req, res, next) => {
     }
 
     // Verifica che l'appartamento esista
-    const apartmentExists = await ApartmentModel.findById(apartment);
-    if (!apartmentExists) {
+    const apartmentData = await ApartmentModel.findById(apartment);
+    if (!apartmentData) {
       return res.status(404).json({ message: "Appartamento non trovato" });
     }
 
-    // Creazione della prenotazione
+    // Calcolo numero di notti
+    const diffTime = new Date(checkOut) - new Date(checkIn);
+    const nights = Math.max(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 1);
+
+    // Calcolo prezzo totale
+    const totalPrice =
+      Math.round(nights * apartmentData.pricePerNight * 100) / 100;
+
+    // Crea la prenotazione senza passare nights e totalPrice dal frontend
     const newBooking = new BookingModel({
       apartment,
       guestName,
@@ -106,6 +114,8 @@ booking.post("/booking/complete", async (req, res, next) => {
       checkIn: new Date(checkIn),
       checkOut: new Date(checkOut),
       guestsCount,
+      nights,
+      totalPrice,
     });
 
     const savedBooking = await newBooking.save();
