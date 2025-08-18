@@ -38,11 +38,18 @@ BookingSchema.pre("save", async function (next) {
     this.bookingCode = uuidv4();
   }
 
-  // Controllo sovrapposizione date con Booking esistente
+  // ⚠️ Controllo sovrapposizione date con Booking esistente
+  // ➡️ esclude se stesso dal controllo (quando aggiorno una prenotazione già creata)
   const overlappingBooking = await mongoose.model("Booking").findOne({
     apartment: this.apartment,
+    _id: { $ne: this._id }, // 👈 importantissimo
     status: { $ne: "cancelled" },
-    $or: [{ checkIn: { $lt: this.checkOut }, checkOut: { $gt: this.checkIn } }],
+    $or: [
+      {
+        checkIn: { $lt: this.checkOut },
+        checkOut: { $gt: this.checkIn },
+      },
+    ],
   });
 
   if (overlappingBooking) {
@@ -64,8 +71,8 @@ BookingSchema.pre("save", async function (next) {
     this.totalPrice = Math.round(nights * apartment.pricePerNight * 100) / 100;
   }
 
-  // Aggiorna bookedDates dell'appartamento
-  if (apartment) {
+  // Aggiorna bookedDates dell'appartamento SOLO se nuova prenotazione
+  if (this.isNew && apartment) {
     apartment.bookedDates.push({
       start: this.checkIn,
       end: this.checkOut,

@@ -54,4 +54,30 @@ apartment.post("/apartment/create", async (req, res, next) => {
   }
 });
 
+apartment.patch(
+  "/apartment/:apartmentId/clear-booked-dates",
+  async (req, res, next) => {
+    try {
+      const { apartmentId } = req.params;
+
+      const updatedAparment = await ApartmentModel.findByIdAndUpdate(
+        apartmentId,
+        { $set: { bookedDates: [] } },
+        { new: true }
+      );
+
+      if (!updatedAparment) {
+        return res.status(404).json({ message: "Appartmaneto non trovato" });
+      }
+
+      res.status(200).json({
+        message: "Tutte le date prenotate sono state cancellate",
+        apartment: updatedAparment,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 module.exports = apartment;
