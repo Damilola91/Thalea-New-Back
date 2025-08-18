@@ -201,4 +201,31 @@ booking.post("/booking/confirm", async (req, res, next) => {
   }
 });
 
+booking.get("/booking/:bookingId", async (req, res, next) => {
+  const { bookingId } = req.params;
+
+  if (!bookingId) {
+    return res.status(400).send({
+      statusCode: 400,
+      message: "Booking ID is required",
+    });
+  }
+
+  try {
+    const bookingExist = await BookingModel.findById(bookingId).populate(
+      "apartment"
+    );
+    if (!bookingExist) {
+      return res.status(404).send({
+        statusCode: 404,
+        message: "Booking not found with the given booking ID",
+      });
+    }
+
+    res.status(200).send(bookingExist);
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = booking;
