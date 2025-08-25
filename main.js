@@ -10,6 +10,7 @@ const loginRoute = require("./routes/login");
 const allowedOrigins = [
   process.env.FRONTEND_URL || "http://localhost:3000",
   "https://www.thaleapalermoapartment.it",
+  "https://nuovo-frontend-thalea.vercel.app",
 ];
 
 const PORT = process.env.PORT || 4252;
