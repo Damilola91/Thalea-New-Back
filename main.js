@@ -7,13 +7,30 @@ const bookingRoute = require("./routes/booking");
 const orderRoute = require("./routes/order");
 const userRoute = require("./routes/user");
 const loginRoute = require("./routes/login");
+const allowedOrigins = [
+  process.env.FRONTEND_URL || "http://localhost:3000",
+  "https://www.thaleapalermoapartment.it",
+];
 
 const PORT = process.env.PORT || 4252;
 
 const server = express();
 
 server.use(express.json());
-server.use(cors());
+server.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS policy: Origin not allowed"));
+      }
+    },
+    credentials: true,
+  })
+);
 
 server.use("/", apartmentRoute);
 server.use("/", bookingRoute);
