@@ -74,6 +74,7 @@ BookingSchema.pre("save", async function (next) {
   // Aggiorna bookedDates dell'appartamento SOLO se nuova prenotazione
   if (this.isNew && apartment) {
     apartment.bookedDates.push({
+      _id: this._id,
       start: this.checkIn,
       end: this.checkOut,
     });

@@ -6,6 +6,23 @@ const sendBookingConfirmationEmail = require("../utils/emailService");
 const OrderModel = require("../models/OrderModel");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
+booking.get("/booking", async (req, res, next) => {
+  try {
+    const bookings = await BookingModel.find().populate("apartment");
+
+    if (!bookings || bookings.length === 0) {
+      return res.status(404).json({
+        message: "Nessuna prenotazione trovata",
+      });
+    }
+
+    res.status(200).json(bookings);
+  } catch (error) {
+    console.error("Errore nel recupero delle prenotazioni:", error);
+    next(error);
+  }
+});
+
 booking.post("/booking/check-availability", async (req, res, next) => {
   try {
     const { checkIn, checkOut, guestsCount } = req.body;
@@ -223,6 +240,49 @@ booking.get("/booking/:bookingId", async (req, res, next) => {
     }
 
     res.status(200).send(bookingExist);
+  } catch (error) {
+    next(error);
+  }
+});
+
+booking.delete("/booking/:apartmentId/:bookingId", async (req, res, next) => {
+  try {
+    const { apartmentId, bookingId } = req.params;
+
+    // Trova l'appartamento
+    const apartment = await ApartmentModel.findById(apartmentId);
+    if (!apartment) {
+      return res.status(404).json({ message: "Appartamento non trovato" });
+    }
+
+    // Filtra bookedDates rimuovendo la prenotazione corrispondente
+    const originalLength = apartment.bookedDates.length;
+    apartment.bookedDates = apartment.bookedDates.filter(
+      (date) => date._id.toString() !== bookingId
+    );
+
+    if (apartment.bookedDates.length === originalLength) {
+      return res
+        .status(404)
+        .json({ message: "Prenotazione non trovata in bookedDates" });
+    }
+
+    await apartment.save();
+
+    // Aggiorna lo status della prenotazione a "cancelled"
+    const booking = await BookingModel.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({ message: "Prenotazione non trovata" });
+    }
+
+    booking.status = "cancelled";
+    await booking.save();
+
+    res.status(200).json({
+      message: "Prenotazione cancellata correttamente",
+      bookedDates: apartment.bookedDates,
+      bookingStatus: booking.status,
+    });
   } catch (error) {
     next(error);
   }
