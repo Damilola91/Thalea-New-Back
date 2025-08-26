@@ -3,6 +3,7 @@ const booking = express.Router();
 const BookingModel = require("../models/BookingModel");
 const ApartmentModel = require("../models/ApartmentModel");
 const sendBookingConfirmationEmail = require("../utils/emailService");
+const sendBookingNotificationToOwner = require("../utils/sendBookingNotificationToOwner");
 const OrderModel = require("../models/OrderModel");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
@@ -195,17 +196,28 @@ booking.post("/booking/confirm", async (req, res, next) => {
     const savedBooking = await bookingRecord.save();
 
     // Invia email di conferma
-    await sendBookingConfirmationEmail(
-      savedBooking.guestEmail,
-      savedBooking.guestName,
-      savedBooking.apartment,
-      savedBooking.checkIn,
-      savedBooking.checkOut,
-      savedBooking.guestsCount,
-      savedBooking.totalPrice,
-      savedBooking.bookingCode
-    );
-
+    await Promise.all([
+      sendBookingConfirmationEmail(
+        savedBooking.guestEmail,
+        savedBooking.guestName,
+        savedBooking.apartment,
+        savedBooking.checkIn,
+        savedBooking.checkOut,
+        savedBooking.guestsCount,
+        savedBooking.totalPrice,
+        savedBooking.bookingCode
+      ),
+      sendBookingNotificationToOwner({
+        guestName: savedBooking.guestName,
+        guestEmail: savedBooking.guestEmail,
+        apartment: savedBooking.apartment,
+        checkIn: savedBooking.checkIn,
+        checkOut: savedBooking.checkOut,
+        guestsCount: savedBooking.guestsCount,
+        totalPrice: savedBooking.totalPrice,
+        bookingCode: savedBooking.bookingCode,
+      }),
+    ]);
     // Risposta al client
     res.status(200).json({
       message: "Pagamento completato e prenotazione confermata",
