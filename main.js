@@ -7,6 +7,7 @@ const bookingRoute = require("./routes/booking");
 const orderRoute = require("./routes/order");
 const userRoute = require("./routes/user");
 const loginRoute = require("./routes/login");
+const newsletterRoute = require("./routes/subscribe");
 const allowedOrigins = [
   process.env.FRONTEND_URL || "http://localhost:3000",
   "https://www.thaleapalermoapartment.it",
@@ -38,6 +39,7 @@ server.use("/", bookingRoute);
 server.use("/", orderRoute);
 server.use("/", userRoute);
 server.use("/", loginRoute);
+server.use("/", newsletterRoute);
 
 init();
 
