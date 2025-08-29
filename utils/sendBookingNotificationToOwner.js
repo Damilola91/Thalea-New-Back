@@ -1,5 +1,4 @@
-const { Resend } = require("resend");
-const resend = new Resend({ apiKey: process.env.RESEND_API_KEY });
+const nodemailer = require("nodemailer");
 
 const sendBookingNotificationToOwner = async ({
   guestName,
@@ -19,9 +18,18 @@ const sendBookingNotificationToOwner = async ({
     fixedCheckInDate.setUTCHours(14, 0, 0, 0);
   }
 
+  // Configurazione del transporter con Gmail
+  const transporter = nodemailer.createTransport({
+    service: "gmail", // oppure "smtp.gmail.com"
+    auth: {
+      user: process.env.SENDER_EMAIL, // la tua Gmail
+      pass: process.env.GMAIL_APP_PASSWORD, // password per app generata da Google
+    },
+  });
+
   try {
-    await resend.emails.send({
-      from: process.env.SENDER_EMAIL,
+    await transporter.sendMail({
+      from: `"Booking System" <${process.env.SENDER_EMAIL}>`,
       to: process.env.SENDER_EMAIL, // mail del proprietario
       subject: `Nuova prenotazione ricevuta - ${apartment}`,
       text: `Hai ricevuto una nuova prenotazione!\n\nCliente: ${guestName}\nEmail: ${guestEmail}\nProprietà: ${apartment}\nCheck-in: ${fixedCheckInDate.toLocaleDateString()} at 14:00\nCheck-out: ${fixedCheckOutDate.toLocaleDateString()} at 10:00\nOspiti: ${guestsCount}\nTotale pagato: €${totalPrice}\nCodice prenotazione: ${bookingCode}`,
@@ -35,9 +43,9 @@ const sendBookingNotificationToOwner = async ({
         <p><strong>Codice prenotazione:</strong> ${bookingCode}</p>`,
     });
 
-    console.log("Email di notifica inviata al proprietario con successo!");
+    console.log("✅ Email di notifica inviata al proprietario con successo!");
   } catch (err) {
-    console.error("Errore invio email al proprietario:", err);
+    console.error("❌ Errore invio email al proprietario:", err);
     throw new Error("Errore invio email al proprietario.");
   }
 };

@@ -1,13 +1,18 @@
 const express = require("express");
 const Subscriber = require("../models/SubscribeModel");
 const { Resend } = require("resend");
-const resend = new Resend({ apiKey: process.env.RESEND_API_KEY });
 
+const resend = new Resend({ apiKey: process.env.RESEND_API_KEY });
 const newsletter = express.Router();
 
 // Funzione per inviare email tramite Resend
 const sendEmail = async ({ to, subject, text, html }) => {
   try {
+    console.log("📨 Tentativo di invio email...");
+    console.log("From:", process.env.SENDER_EMAIL);
+    console.log("To:", to);
+    console.log("Subject:", subject);
+
     const response = await resend.emails.send({
       from: process.env.SENDER_EMAIL,
       to,
@@ -15,10 +20,19 @@ const sendEmail = async ({ to, subject, text, html }) => {
       text,
       html,
     });
-    console.log("Email sent to:", to);
+
+    console.log("✅ Email inviata con successo!");
+    console.log("Resend response:", JSON.stringify(response, null, 2));
+
     return response;
   } catch (err) {
-    console.error("Failed to send email to:", to, err);
+    console.error("❌ Errore durante l'invio dell'email:", err.message);
+    if (err.response) {
+      console.error(
+        "Resend API response:",
+        JSON.stringify(err.response, null, 2)
+      );
+    }
     throw new Error(`Failed to send email to ${to}`);
   }
 };
@@ -46,6 +60,9 @@ newsletter.post("/subscribe", async (req, res, next) => {
       newSubscriber,
     });
 
+    // Log per capire se l’email parte
+    console.log(`👉 Invio email di benvenuto a ${email}...`);
+
     await sendEmail({
       to: email,
       subject: "Welcome to Our Newsletter!",
@@ -56,7 +73,6 @@ newsletter.post("/subscribe", async (req, res, next) => {
     next(error);
   }
 });
-
 // Route per inviare newsletter a tutti i subscriber in parallelo
 newsletter.post("/send-newsletter", async (req, res, next) => {
   const { subject, text, html } = req.body;

@@ -1,5 +1,4 @@
-const { Resend } = require("resend");
-const resend = new Resend({ apiKey: process.env.RESEND_API_KEY });
+const nodemailer = require("nodemailer");
 
 const sendBookingConfirmationEmail = async (
   guestEmail,
@@ -19,13 +18,21 @@ const sendBookingConfirmationEmail = async (
     fixedCheckInDate.setUTCHours(14, 0, 0, 0);
   }
 
-  try {
-    const response = await resend.emails.send({
-      from: process.env.SENDER_EMAIL,
-      to: guestEmail,
-      subject: `Booking Confirmation - Your Stay at ${apartment}`,
-      text: `Dear ${guestName},\n\nYour booking has been successfully created!\n\nHere are the details of your stay:\n- Property: ${apartment}\n- Check-in: ${fixedCheckInDate.toLocaleDateString()} at 14:00\n- Check-out: ${fixedCheckOutDate.toLocaleDateString()} at 10:00\n- Guests: ${guestsCount}\n- Total Price: €${totalPrice}\n- Booking Code: ${bookingCode}\n\nThank you for choosing us!\n\nBest regards,\nThe Team`,
-      html: `<h1>Booking Confirmation</h1>
+  // Configurazione del transporter con Gmail
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.SENDER_EMAIL, // la tua Gmail
+      pass: process.env.EMAIL_PASS, // password per app di Google
+    },
+  });
+
+  const mailOptions = {
+    from: process.env.SENDER_EMAIL,
+    to: guestEmail,
+    subject: `Booking Confirmation - Your Stay at ${apartment}`,
+    text: `Dear ${guestName},\n\nYour booking has been successfully created!\n\nHere are the details of your stay:\n- Property: ${apartment}\n- Check-in: ${fixedCheckInDate.toLocaleDateString()} at 14:00\n- Check-out: ${fixedCheckOutDate.toLocaleDateString()} at 10:00\n- Guests: ${guestsCount}\n- Total Price: €${totalPrice}\n- Booking Code: ${bookingCode}\n\nThank you for choosing us!\n\nBest regards,\nThe Team`,
+    html: `<h1>Booking Confirmation</h1>
         <p>Dear ${guestName},</p>
         <p>Your booking has been successfully created!</p>
         <h3>Details of your stay:</h3>
@@ -40,9 +47,11 @@ const sendBookingConfirmationEmail = async (
         <p>Thank you for choosing us!</p>
         <p>Best regards,</p>
         <p>The Team</p>`,
-    });
+  };
 
-    console.log("Confirmation email sent to:", guestEmail, response);
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Confirmation email sent:", info.response);
   } catch (error) {
     console.error("Failed to send confirmation email:", error);
     throw new Error("Failed to send confirmation email.");
