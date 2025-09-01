@@ -3,7 +3,6 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const init = require("./db");
 require("dotenv").config();
-
 const apartmentRoute = require("./routes/apartment");
 const bookingRoute = require("./routes/booking");
 const orderRoute = require("./routes/order");

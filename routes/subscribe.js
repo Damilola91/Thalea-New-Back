@@ -1,11 +1,19 @@
 const express = require("express");
 const Subscriber = require("../models/SubscribeModel");
-const { Resend } = require("resend");
+const nodemailer = require("nodemailer");
 
-const resend = new Resend({ apiKey: process.env.RESEND_API_KEY });
 const newsletter = express.Router();
 
-// Funzione per inviare email tramite Resend
+// Configurazione Nodemailer (usa Gmail + app password)
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.SENDER_EMAIL, // la tua Gmail
+    pass: process.env.EMAIL_PASS, // password per app di Google
+  },
+});
+
+// Funzione per inviare email
 const sendEmail = async ({ to, subject, text, html }) => {
   try {
     console.log("📨 Tentativo di invio email...");
@@ -13,7 +21,7 @@ const sendEmail = async ({ to, subject, text, html }) => {
     console.log("To:", to);
     console.log("Subject:", subject);
 
-    const response = await resend.emails.send({
+    const response = await transporter.sendMail({
       from: process.env.SENDER_EMAIL,
       to,
       subject,
@@ -22,17 +30,11 @@ const sendEmail = async ({ to, subject, text, html }) => {
     });
 
     console.log("✅ Email inviata con successo!");
-    console.log("Resend response:", JSON.stringify(response, null, 2));
+    console.log("Nodemailer response:", response);
 
     return response;
   } catch (err) {
     console.error("❌ Errore durante l'invio dell'email:", err.message);
-    if (err.response) {
-      console.error(
-        "Resend API response:",
-        JSON.stringify(err.response, null, 2)
-      );
-    }
     throw new Error(`Failed to send email to ${to}`);
   }
 };
@@ -73,6 +75,7 @@ newsletter.post("/subscribe", async (req, res, next) => {
     next(error);
   }
 });
+
 // Route per inviare newsletter a tutti i subscriber in parallelo
 newsletter.post("/send-newsletter", async (req, res, next) => {
   const { subject, text, html } = req.body;
