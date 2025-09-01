@@ -17,9 +17,9 @@
   },
   "homepage": "https://github.com/Damilola91/Nuovo-Backend-Thalea#readme",
   "dependencies": {
-    "@sendgrid/mail": "^8.1.5",
     "bcrypt": "^6.0.0",
     "cloudinary": "^2.7.0",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
@@ -31,7 +31,6 @@
     "multer-storage-cloudinary": "^4.0.0",
     "nodemailer": "^7.0.5",
     "nodemon": "^3.1.10",
-    "resend": "^6.0.1",
     "stripe": "^18.4.0",
     "uuid": "^11.1.0"
   }
