@@ -24,57 +24,63 @@ booking.get("/booking", async (req, res, next) => {
   }
 });
 
-booking.post("/booking/check-availability", async (req, res, next) => {
+booking.post("/check-availability", async (req, res, next) => {
   try {
     const { checkIn, checkOut, guestsCount } = req.body;
 
     if (!checkIn || !checkOut || !guestsCount) {
-      return res
-        .status(400)
-        .json({ message: "checkIn, checkOut e guestsCount sono obbligatori." });
+      return res.status(400).json({
+        message: "checkIn, checkOut e guestsCount sono obbligatori.",
+      });
     }
 
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
 
     if (checkOutDate <= checkInDate) {
-      return res
-        .status(400)
-        .json({ message: "checkOut deve essere successivo a checkIn." });
-    }
-
-    // Calcolo numero di notti
-    const diffTime = checkOutDate - checkInDate;
-    const nights = Math.max(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 1);
-
-    // Trova appartamenti disponibili
-    const availableApartments = await ApartmentModel.find({
-      maxGuests: { $gte: guestsCount },
-      bookedDates: {
-        $not: {
-          $elemMatch: {
-            start: { $lt: checkOutDate },
-            end: { $gt: checkInDate },
-          },
-        },
-      },
-    });
-
-    if (!availableApartments.length) {
-      return res.status(404).json({
-        message: "Nessun appartamento disponibile per le date selezionate.",
+      return res.status(400).json({
+        message: "checkOut deve essere successivo a checkIn.",
       });
     }
 
-    // Mappa appartamenti con prezzo totale calcolato
-    const results = availableApartments.map((apartment) => ({
-      apartment,
-      nights,
-      totalPrice: Math.round(nights * apartment.pricePerNight * 100) / 100,
-      guestsCount,
-      checkIn: checkInDate,
-      checkOut: checkOutDate,
-    }));
+    const nights = Math.max(
+      Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)),
+      1
+    );
+
+    // Recupera tutti gli appartamenti che possono ospitare il numero richiesto di ospiti
+    const apartments = await ApartmentModel.find({
+      maxGuests: { $gte: guestsCount },
+    });
+
+    if (!apartments.length) {
+      return res.status(404).json({
+        message: "Nessun appartamento disponibile per il numero di ospiti.",
+      });
+    }
+
+    // Recupera tutte le prenotazioni confermate che si sovrappongono al range
+    const confirmedBookings = await BookingModel.find({
+      status: "confirmed",
+      $or: [{ checkIn: { $lt: checkOutDate }, checkOut: { $gt: checkInDate } }],
+    });
+
+    // Mappa gli appartamenti con il calcolo totale del prezzo e stato disponibilità
+    const results = apartments.map((apartment) => {
+      const hasConfirmed = confirmedBookings.some(
+        (b) => b.apartment.toString() === apartment._id.toString()
+      );
+
+      return {
+        apartment,
+        nights,
+        totalPrice: Math.round(nights * apartment.pricePerNight * 100) / 100,
+        guestsCount,
+        checkIn: checkInDate,
+        checkOut: checkOutDate,
+        status: hasConfirmed ? "unavailable" : "available", // pending considerata disponibile
+      };
+    });
 
     return res.json(results);
   } catch (error) {

@@ -25,6 +25,10 @@ const sendBookingNotificationToOwner = async ({
       user: process.env.SENDER_EMAIL, // la tua Gmail
       pass: process.env.EMAIL_PASS, // password per app generata da Google
     },
+    tls:
+      process.env.NODE_ENV !== "production"
+        ? { rejectUnauthorized: false }
+        : undefined,
   });
 
   try {

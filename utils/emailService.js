@@ -25,6 +25,10 @@ const sendBookingConfirmationEmail = async (
       user: process.env.SENDER_EMAIL, // la tua Gmail
       pass: process.env.EMAIL_PASS, // password per app di Google
     },
+    tls:
+      process.env.NODE_ENV !== "production"
+        ? { rejectUnauthorized: false }
+        : undefined,
   });
 
   const mailOptions = {
