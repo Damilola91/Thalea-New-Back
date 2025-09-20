@@ -6,6 +6,7 @@ const sendBookingConfirmationEmail = require("../utils/emailService");
 const sendBookingNotificationToOwner = require("../utils/sendBookingNotificationToOwner");
 const OrderModel = require("../models/OrderModel");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const { checkLodgifyAvailability } = require("../utils/lodgifyService");
 
 booking.get("/booking", async (req, res, next) => {
   try {
@@ -43,6 +44,43 @@ booking.post("/booking/check-availability", async (req, res, next) => {
       });
     }
 
+    // Converti le date nel formato YYYY-MM-DD per Lodgify
+    const startDate = checkInDate.toISOString().split("T")[0];
+    const endDate = checkOutDate.toISOString().split("T")[0];
+
+    // STEP 1: Controlla disponibilità su Lodgify PRIMA di tutto
+    console.log("STEP 1 - Controllo Lodgify per periodo:", {
+      startDate,
+      endDate,
+    });
+
+    const lodgifyResult = await checkLodgifyAvailability(startDate, endDate);
+    console.log("Risultato controllo Lodgify:", lodgifyResult);
+
+    // Se Lodgify dice che NON è disponibile, fermiamo tutto subito
+    if (lodgifyResult.available === false) {
+      return res.status(200).json({
+        message: "Periodo non disponibile secondo il channel manager Lodgify.",
+        available: false,
+        source: "lodgify",
+        lodgifyData: lodgifyResult.data,
+        period: { startDate, endDate },
+      });
+    }
+
+    // Se c'è stato un errore con Lodgify, logga ma continua
+    if (lodgifyResult.available === null) {
+      console.warn(
+        "ATTENZIONE: Errore controllo Lodgify, continuo con database interno:",
+        lodgifyResult.error
+      );
+    } else {
+      console.log(
+        "✅ Lodgify dice che il periodo è DISPONIBILE, procedo con controllo interno"
+      );
+    }
+
+    // STEP 2: Se arriviamo qui, Lodgify ha dato OK (o è in errore), controlliamo il database interno
     const nights = Math.max(
       Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)),
       1
@@ -56,6 +94,11 @@ booking.post("/booking/check-availability", async (req, res, next) => {
     if (!apartments.length) {
       return res.status(404).json({
         message: "Nessun appartamento disponibile per il numero di ospiti.",
+        availabilityCheck: {
+          lodgify: lodgifyResult.available === null ? "error" : "available",
+          internalDatabase: "no_apartments",
+          period: { startDate, endDate },
+        },
       });
     }
 
@@ -82,8 +125,18 @@ booking.post("/booking/check-availability", async (req, res, next) => {
       };
     });
 
-    return res.json(results);
+    // Risposta finale con info sui controlli effettuati
+    return res.json({
+      results,
+      availabilityCheck: {
+        lodgify: lodgifyResult.available === null ? "error" : "available",
+        internalDatabase: "checked",
+        period: { startDate, endDate },
+        lodgifyError: lodgifyResult.error || null,
+      },
+    });
   } catch (error) {
+    console.error("Errore in check-availability:", error);
     next(error);
   }
 });
