@@ -24,7 +24,7 @@ booking.get("/booking", async (req, res, next) => {
   }
 });
 
-booking.post("/check-availability", async (req, res, next) => {
+booking.post("/booking/check-availability", async (req, res, next) => {
   try {
     const { checkIn, checkOut, guestsCount } = req.body;
 
