@@ -7,6 +7,7 @@ const sendBookingNotificationToOwner = require("../utils/sendBookingNotification
 const OrderModel = require("../models/OrderModel");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { checkLodgifyAvailability } = require("../utils/lodgifyService");
+const { getLodgifyBookedDates } = require("../utils/getLodgifyBookedDates");
 
 booking.get("/booking", async (req, res, next) => {
   try {
@@ -21,6 +22,63 @@ booking.get("/booking", async (req, res, next) => {
     res.status(200).json(bookings);
   } catch (error) {
     console.error("Errore nel recupero delle prenotazioni:", error);
+    next(error);
+  }
+});
+
+booking.get("/booking/occupied-dates", async (req, res, next) => {
+  try {
+    const propertyId = process.env.LODGIFY_PROPERTY_ID;
+    if (!propertyId) {
+      return res.status(500).json({ error: "Property ID not configured" });
+    }
+
+    const today = new Date();
+    const nextYear = new Date();
+    nextYear.setFullYear(today.getFullYear() + 1);
+
+    const startDate = req.query.start || today.toISOString().split("T")[0];
+    const endDate = req.query.end || nextYear.toISOString().split("T")[0];
+
+    // 1️⃣ Date da Lodgify
+    const { occupiedDates: lodgifyDates, error: lodgifyError } =
+      await getLodgifyBookedDates(startDate, endDate);
+
+    // 2️⃣ Date dal database interno
+    const internalBookings = await BookingModel.find({
+      status: "confirmed",
+      $or: [
+        {
+          checkIn: { $lt: new Date(endDate) },
+          checkOut: { $gt: new Date(startDate) },
+        },
+      ],
+    });
+
+    const internalDates = [];
+    internalBookings.forEach((b) => {
+      for (
+        let d = new Date(b.checkIn);
+        d <= b.checkOut; // 👉 includo il giorno di check-out interno
+        d.setDate(d.getDate() + 1)
+      ) {
+        internalDates.push(d.toISOString().split("T")[0]);
+      }
+    });
+
+    const combinedDates = [...new Set([...lodgifyDates, ...internalDates])];
+
+    res.json({
+      occupiedDates: combinedDates.sort(),
+      sources: {
+        lodgify: lodgifyError ? "error" : "ok",
+        internal: "ok",
+      },
+      errors: lodgifyError ? { lodgify: lodgifyError } : null,
+      period: { startDate, endDate },
+    });
+  } catch (error) {
+    console.error("Errore in GET /booking/occupied-dates:", error);
     next(error);
   }
 });
