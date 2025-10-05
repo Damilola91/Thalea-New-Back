@@ -24,6 +24,10 @@ const BookingSchema = new mongoose.Schema(
     },
     notes: { type: String, trim: true, required: false },
     bookingCode: { type: String, unique: true },
+    lodgifyId: {
+      type: Number,
+      required: false,
+    },
   },
   {
     timestamps: true,

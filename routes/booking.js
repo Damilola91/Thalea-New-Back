@@ -8,6 +8,10 @@ const OrderModel = require("../models/OrderModel");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { checkLodgifyAvailability } = require("../utils/lodgifyService");
 const { getLodgifyBookedDates } = require("../utils/getLodgifyBookedDates");
+const { createLodgifyBooking } = require("../utils/createLodgifyBooking");
+const {
+  setBookingAsBookedLodgify,
+} = require("../utils/setBookingAsBookedLodgify");
 
 booking.get("/booking", async (req, res, next) => {
   try {
@@ -211,7 +215,6 @@ booking.post("/booking/complete", async (req, res, next) => {
       guestsCount,
     } = req.body;
 
-    // Controlli campi obbligatori
     if (
       !apartment ||
       !guestName ||
@@ -220,27 +223,32 @@ booking.post("/booking/complete", async (req, res, next) => {
       !checkOut ||
       !guestsCount
     ) {
-      return res.status(400).json({
-        message:
-          "I campi obbligatori sono: apartment, guestName, guestEmail, checkIn, checkOut e guestsCount",
-      });
+      return res.status(400).json({ message: "Campi obbligatori mancanti" });
     }
 
-    // Verifica che l'appartamento esista
     const apartmentData = await ApartmentModel.findById(apartment);
-    if (!apartmentData) {
+    if (!apartmentData)
       return res.status(404).json({ message: "Appartamento non trovato" });
-    }
 
-    // Calcolo numero di notti
     const diffTime = new Date(checkOut) - new Date(checkIn);
     const nights = Math.max(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 1);
-
-    // Calcolo prezzo totale
     const totalPrice =
       Math.round(nights * apartmentData.pricePerNight * 100) / 100;
 
-    // Crea la prenotazione senza passare nights e totalPrice dal frontend
+    // 🔹 PRIMA creo la prenotazione su Lodgify
+    const lodgifyBooking = await createLodgifyBooking({
+      checkIn,
+      checkOut,
+      guestName,
+      guestEmail,
+      guestPhone,
+      guestsCount,
+      totalPrice,
+    });
+
+    console.log("Lodgify response:", lodgifyBooking);
+
+    // 🔹 POI salvo nel DB direttamente con lodgifyId
     const newBooking = new BookingModel({
       apartment,
       guestName,
@@ -251,6 +259,7 @@ booking.post("/booking/complete", async (req, res, next) => {
       guestsCount,
       nights,
       totalPrice,
+      lodgifyId: lodgifyBooking,
     });
 
     const savedBooking = await newBooking.save();
@@ -260,6 +269,7 @@ booking.post("/booking/complete", async (req, res, next) => {
       booking: savedBooking,
     });
   } catch (error) {
+    console.error("Errore generale /booking/complete:", error);
     next(error);
   }
 });
@@ -279,9 +289,14 @@ booking.post("/booking/confirm", async (req, res, next) => {
       return res.status(404).json({ error: "Ordine non trovato" });
     }
 
-    // Evita conferme doppie
+    // Evita conferme doppie sull'ordine
     if (order.status === "paid") {
-      return res.status(400).json({ error: "Ordine già pagato" });
+      console.log("⚠️ Ordine già pagato, niente da fare");
+      const bookingRecord = await BookingModel.findById(order.bookingId);
+      return res.status(200).json({
+        message: "Ordine già pagato",
+        booking: bookingRecord,
+      });
     }
 
     // Recupera il PaymentIntent da Stripe
@@ -308,9 +323,30 @@ booking.post("/booking/confirm", async (req, res, next) => {
       return res.status(404).json({ error: "Prenotazione non trovata" });
     }
 
+    // Evita conferme doppie sul booking
+    if (bookingRecord.status === "confirmed") {
+      console.log("⚠️ Prenotazione già confermata, niente da fare");
+      return res.status(200).json({
+        message: "Prenotazione già confermata",
+        booking: bookingRecord,
+      });
+    }
+
     // Aggiorna lo status della prenotazione
     bookingRecord.status = "confirmed";
     const savedBooking = await bookingRecord.save();
+
+    // Aggiorna Lodgify solo se c'è l'ID
+    if (savedBooking.lodgifyId) {
+      try {
+        await setBookingAsBookedLodgify(savedBooking.lodgifyId);
+        console.log("✅ Stato Lodgify aggiornato a 'Booked'");
+      } catch (lodgifyError) {
+        console.error("❌ Errore aggiornamento Lodgify:", lodgifyError.message);
+      }
+    } else {
+      console.warn("⚠️ Nessun lodgifyId trovato per questa prenotazione");
+    }
 
     // Invia email di conferma
     await Promise.all([
@@ -335,6 +371,7 @@ booking.post("/booking/confirm", async (req, res, next) => {
         bookingCode: savedBooking.bookingCode,
       }),
     ]);
+
     // Risposta al client
     res.status(200).json({
       message: "Pagamento completato e prenotazione confermata",

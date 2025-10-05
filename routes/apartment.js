@@ -80,6 +80,30 @@ apartment.patch(
   }
 );
 
+apartment.patch("/apartment/update/:apartmentId", async (req, res, next) => {
+  try {
+    const { apartmentId } = req.params;
+    const updates = req.body; // ✅ i campi da aggiornare vengono passati nel body
+
+    const updatedApartment = await ApartmentModel.findByIdAndUpdate(
+      apartmentId,
+      { $set: updates },
+      { new: true, runValidators: true } // new: true => ritorna il documento aggiornato
+    );
+
+    if (!updatedApartment) {
+      return res.status(404).json({ message: "Appartamento non trovato" });
+    }
+
+    res.status(200).json({
+      message: "Appartamento aggiornato con successo",
+      apartment: updatedApartment,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 apartment.get("/lodgify/property", async (req, res) => {
   try {
     const response = await fetch(
