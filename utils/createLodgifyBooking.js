@@ -20,8 +20,9 @@ const createLodgifyBooking = async ({
     bookability: "InstantBooking",
     rooms: [
       {
-        room_type_id: Number(process.env.LODGIFY_ROOM_TYPE_ID), // 👈 AGGIUNTO
+        room_type_id: Number(process.env.LODGIFY_ROOM_TYPE_ID),
         quantity: 1,
+        adults: guestsCount,
       },
     ],
     guest: {
@@ -30,7 +31,6 @@ const createLodgifyBooking = async ({
       last_name: guestName.split(" ").slice(1).join(" ") || guestName,
       email: guestEmail,
       phone: guestPhone || null,
-      adults: guestsCount,
     },
     total: totalPrice,
     currency_code: "EUR",
