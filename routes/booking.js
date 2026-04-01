@@ -134,18 +134,18 @@ booking.post("/booking/check-availability", async (req, res, next) => {
     if (lodgifyResult.available === null) {
       console.warn(
         "ATTENZIONE: Errore controllo Lodgify, continuo con database interno:",
-        lodgifyResult.error
+        lodgifyResult.error,
       );
     } else {
       console.log(
-        "✅ Lodgify dice che il periodo è DISPONIBILE, procedo con controllo interno"
+        "✅ Lodgify dice che il periodo è DISPONIBILE, procedo con controllo interno",
       );
     }
 
     // STEP 2: Se arriviamo qui, Lodgify ha dato OK (o è in errore), controlliamo il database interno
     const nights = Math.max(
       Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)),
-      1
+      1,
     );
 
     // Recupera tutti gli appartamenti che possono ospitare il numero richiesto di ospiti
@@ -173,7 +173,7 @@ booking.post("/booking/check-availability", async (req, res, next) => {
     // Mappa gli appartamenti con il calcolo totale del prezzo e stato disponibilità
     const results = apartments.map((apartment) => {
       const hasConfirmed = confirmedBookings.some(
-        (b) => b.apartment.toString() === apartment._id.toString()
+        (b) => b.apartment.toString() === apartment._id.toString(),
       );
 
       return {
@@ -358,7 +358,7 @@ booking.post("/booking/confirm", async (req, res, next) => {
         savedBooking.checkOut,
         savedBooking.guestsCount,
         savedBooking.totalPrice,
-        savedBooking.bookingCode
+        savedBooking.bookingCode,
       ),
       sendBookingNotificationToOwner({
         guestName: savedBooking.guestName,
@@ -395,9 +395,8 @@ booking.get("/booking/:bookingId", async (req, res, next) => {
   }
 
   try {
-    const bookingExist = await BookingModel.findById(bookingId).populate(
-      "apartment"
-    );
+    const bookingExist =
+      await BookingModel.findById(bookingId).populate("apartment");
     if (!bookingExist) {
       return res.status(404).send({
         statusCode: 404,
@@ -424,7 +423,7 @@ booking.delete("/booking/:apartmentId/:bookingId", async (req, res, next) => {
     // Filtra bookedDates rimuovendo la prenotazione corrispondente
     const originalLength = apartment.bookedDates.length;
     apartment.bookedDates = apartment.bookedDates.filter(
-      (date) => date._id.toString() !== bookingId
+      (date) => date._id.toString() !== bookingId,
     );
 
     if (apartment.bookedDates.length === originalLength) {
