@@ -1,5 +1,5 @@
-import { stripe } from "../../config/stripe";
 import { createAppError } from "./orderErrors";
+import { createStripePaymentIntent } from "../../shared/integrations/stripe/stripeAdapter";
 
 export const createStripePaymentIntentForOrder = async (
   amount: number,
@@ -10,10 +10,10 @@ export const createStripePaymentIntentForOrder = async (
     throw createAppError("Importo non valido per Stripe", 400);
   }
 
-  return await stripe.paymentIntents.create({
+  return await createStripePaymentIntent({
     amount,
     currency: "eur",
-    payment_method_types: [paymentMethod],
-    receipt_email: receiptEmail,
+    paymentMethodTypes: [paymentMethod],
+    receiptEmail,
   });
 };

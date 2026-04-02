@@ -32,3 +32,9 @@ export interface LodgifyAvailabilityResponse {
   status?: number;
   data?: LodgifyAvailabilityItem[];
 }
+
+export interface LodgifyBookingResponse {
+  id?: number;
+  booking_id?: number;
+  [key: string]: unknown;
+}

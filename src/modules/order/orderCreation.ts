@@ -52,7 +52,7 @@ export const createPaymentOrder = async (
   return {
     message: "Pagamento in corso...",
     paymentIntentId: paymentIntent.id,
-    clientSecret: paymentIntent.client_secret,
+    clientSecret: paymentIntent.clientSecret,
     orderId: savedOrder._id.toString(),
     stripeStatus: paymentIntent.status,
     order: mapOrderResponse(savedOrder),

@@ -1,4 +1,3 @@
-import { stripe } from "../../config/stripe";
 import { sendBookingConfirmationEmail } from "../../shared/utils/email/sendBookingConfirmationEmail";
 import { sendBookingNotificationToOwner } from "../../shared/utils/email/sendBookingNotificationToOwner";
 import {
@@ -10,6 +9,7 @@ import {
   findRawOrderById,
   updateOrderStatusById,
 } from "../order/orderRepository";
+import { retrieveStripePaymentIntent } from "../../shared/integrations/stripe/stripeAdapter";
 import { createAppError } from "./bookingErrors";
 import {
   getApartmentLabelFromBooking,
@@ -28,7 +28,7 @@ export const getValidatedPaymentContext = async (
 ) => {
   const [order, paymentIntent] = await Promise.all([
     findRawOrderById(orderId),
-    stripe.paymentIntents.retrieve(paymentIntentId),
+    retrieveStripePaymentIntent(paymentIntentId),
   ]);
 
   if (!order) {
