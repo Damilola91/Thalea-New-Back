@@ -25,6 +25,16 @@ export const findUserByEmail = async (
   return await UserModel.findOne({ email });
 };
 
+export const findUserByEmailExcludingUserId = async (
+  email: string,
+  userId: string,
+): Promise<IUserDocument | null> => {
+  return await UserModel.findOne({
+    email,
+    _id: { $ne: userId },
+  });
+};
+
 export const updateUserById = async (
   userId: string,
   updateData: UpdateUserDto,

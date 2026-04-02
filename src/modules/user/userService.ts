@@ -5,6 +5,7 @@ import {
   deleteUserById,
   findAllUsers,
   findUserByEmail,
+  findUserByEmailExcludingUserId,
   updateUserById,
 } from "./userRepository";
 import { CreateUserDto, UpdatePasswordDto, UpdateUserDto } from "./userDto";
@@ -45,6 +46,21 @@ export const updateUserService = async (
   updateData: UpdateUserDto,
 ): Promise<IUserResponse | null> => {
   const dataToUpdate = { ...updateData };
+
+  if (dataToUpdate.email) {
+    const existingUser = await findUserByEmailExcludingUserId(
+      dataToUpdate.email,
+      userId,
+    );
+
+    if (existingUser) {
+      const error = new Error("Email già in uso") as Error & {
+        status?: number;
+      };
+      error.status = 409;
+      throw error;
+    }
+  }
 
   if (dataToUpdate.password) {
     const salt = await bcrypt.genSalt(10);
