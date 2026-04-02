@@ -5,9 +5,9 @@ import morgan from "morgan";
 
 import userRoute from "./modules/user/userRoute";
 import authRoute from "./modules/auth/authRoute";
-// import apartmentRoute from './modules/apartment/apartment.route';
-// import bookingRoute from './modules/booking/booking.route';
-// import orderRoute from './modules/order/order.route';
+import apartmentRoute from "./modules/apartment/apartmentRoute";
+import bookingRoute from "./modules/booking/bookingRoute";
+import orderRoute from "./modules/order/orderRoute";
 // import newsletterRoute from './modules/newsletter/newsletter.route';
 
 import notFoundMiddleware from "./middlewares/notFound";
@@ -49,9 +49,9 @@ app.get("/", (_req, res) => {
 
 app.use("/api/users", userRoute);
 app.use("/api/auth", authRoute);
-// app.use('/api/apartments', apartmentRoute);
-// app.use('/api/bookings', bookingRoute);
-// app.use('/api/orders', orderRoute);
+app.use("/api/apartments", apartmentRoute);
+app.use("/api/bookings", bookingRoute);
+app.use("/api/orders", orderRoute);
 // app.use('/api/newsletter', newsletterRoute);
 
 app.use(notFoundMiddleware);
