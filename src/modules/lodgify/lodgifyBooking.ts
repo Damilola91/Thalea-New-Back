@@ -1,6 +1,6 @@
 import { lodgifyRequest } from "./lodgifyClient";
 import { getLodgifyPropertyId, getLodgifyRoomTypeId } from "./lodgifyConfig";
-import { CreateLodgifyBookingDto } from "./lodgifyTypes";
+import { CreateLodgifyBookingDto } from "../../shared/integrations/lodgify/lodgifyTypes";
 import { formatLodgifyDate } from "./lodgifyUtils";
 
 export interface LodgifyBookingResponse {

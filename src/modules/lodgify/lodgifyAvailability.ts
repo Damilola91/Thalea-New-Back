@@ -4,7 +4,7 @@ import {
   LodgifyAvailabilityItem,
   LodgifyAvailabilityResponse,
   LodgifyOccupiedDatesResponse,
-} from "./lodgifyTypes";
+} from "../../shared/integrations/lodgify/lodgifyTypes";
 import {
   extractOccupiedDatesFromAvailability,
   isValidDateString,

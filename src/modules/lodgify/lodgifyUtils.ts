@@ -1,4 +1,4 @@
-import { LodgifyAvailabilityItem } from "./lodgifyTypes";
+import { LodgifyAvailabilityItem } from "../../shared/integrations/lodgify/lodgifyTypes";
 
 export const formatLodgifyDate = (date: string): string => {
   return new Date(date).toISOString().split("T")[0];
