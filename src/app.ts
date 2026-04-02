@@ -8,7 +8,7 @@ import authRoute from "./modules/auth/authRoute";
 import apartmentRoute from "./modules/apartment/apartmentRoute";
 import bookingRoute from "./modules/booking/bookingRoute";
 import orderRoute from "./modules/order/orderRoute";
-// import newsletterRoute from './modules/newsletter/newsletter.route';
+import newsletterRoute from "./modules/newsletter/newsletterRoute";
 
 import notFoundMiddleware from "./middlewares/notFound";
 import errorMiddleware from "./middlewares/errorResponse";
@@ -52,7 +52,7 @@ app.use("/api/auth", authRoute);
 app.use("/api/apartments", apartmentRoute);
 app.use("/api/bookings", bookingRoute);
 app.use("/api/orders", orderRoute);
-// app.use('/api/newsletter', newsletterRoute);
+app.use("/api/newsletter", newsletterRoute);
 
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);
