@@ -4,7 +4,7 @@ import cookieParser from "cookie-parser";
 import morgan from "morgan";
 
 import userRoute from "./modules/user/userRoute";
-// import authRoute from './modules/auth/auth.route';
+import authRoute from "./modules/auth/authRoute";
 // import apartmentRoute from './modules/apartment/apartment.route';
 // import bookingRoute from './modules/booking/booking.route';
 // import orderRoute from './modules/order/order.route';
@@ -48,8 +48,7 @@ app.get("/", (_req, res) => {
 });
 
 app.use("/api/users", userRoute);
-
-// app.use('/api/auth', authRoute);
+app.use("/api/auth", authRoute);
 // app.use('/api/apartments', apartmentRoute);
 // app.use('/api/bookings', bookingRoute);
 // app.use('/api/orders', orderRoute);
