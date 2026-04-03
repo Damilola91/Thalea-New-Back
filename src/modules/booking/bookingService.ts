@@ -19,12 +19,12 @@ import {
 } from "./bookingDto";
 import { mapBookingResponse } from "./bookingMapper";
 import { findAllBookings, findBookingById } from "./bookingRepository";
+import {
+  checkAvailabilitySchema,
+  confirmBookingSchema,
+} from "./bookingSchemas";
 import { IBookingResponse } from "./bookingTypes";
 import { parseBookingDates } from "./bookingUtils";
-import {
-  validateAvailabilityInput,
-  validateConfirmBookingInput,
-} from "./bookingValidation";
 
 export const getAllBookingsService = async (): Promise<IBookingResponse[]> => {
   const bookings = await findAllBookings();
@@ -51,9 +51,9 @@ export const getOccupiedDatesService = async (
 };
 
 export const checkAvailabilityService = async (data: CheckAvailabilityDto) => {
-  validateAvailabilityInput(data);
+  const validatedData = checkAvailabilitySchema.parse(data);
 
-  const { checkIn, checkOut, guestsCount } = data;
+  const { checkIn, checkOut, guestsCount } = validatedData;
   const { checkInDate, checkOutDate } = parseBookingDates(checkIn, checkOut);
 
   return await buildAvailabilityResponse(
@@ -70,9 +70,9 @@ export const completeBookingService = async (
 };
 
 export const confirmBookingService = async (data: ConfirmBookingDto) => {
-  validateConfirmBookingInput(data);
+  const validatedData = confirmBookingSchema.parse(data);
 
-  const { paymentIntentId, orderId } = data;
+  const { paymentIntentId, orderId } = validatedData;
 
   const alreadyPaidResult = await getAlreadyPaidOrderResult(orderId);
 

@@ -8,14 +8,14 @@ import {
   createBooking,
   findOverlappingBookingsForApartment,
 } from "./bookingRepository";
+import { completeBookingSchema } from "./bookingSchemas";
 import { IBookingResponse } from "./bookingTypes";
 import { calculateNights, parseBookingDates } from "./bookingUtils";
-import { validateCompleteBookingInput } from "./bookingValidation";
 
 export const createPendingBookingRecord = async (
   data: CompleteBookingDto,
 ): Promise<IBookingResponse> => {
-  validateCompleteBookingInput(data);
+  const validatedData = completeBookingSchema.parse(data);
 
   const {
     apartment,
@@ -26,7 +26,7 @@ export const createPendingBookingRecord = async (
     checkOut,
     guestsCount,
     notes,
-  } = data;
+  } = validatedData;
 
   const { checkInDate, checkOutDate } = parseBookingDates(checkIn, checkOut);
 
