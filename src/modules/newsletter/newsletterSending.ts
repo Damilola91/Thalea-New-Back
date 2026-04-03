@@ -2,12 +2,12 @@ import { SendNewsletterDto } from "./newsletterDto";
 import { createAppError } from "./newsletterErrors";
 import { sendNewsletterEmail } from "./newsletterEmail";
 import { findAllSubscribers } from "./newsletterRepository";
-import { validateSendNewsletterInput } from "./newsletterValidation";
+import { sendNewsletterSchema } from "./newsletterSchemas";
 
 export const sendNewsletterToSubscribers = async (data: SendNewsletterDto) => {
-  validateSendNewsletterInput(data);
+  const validatedData = sendNewsletterSchema.parse(data);
 
-  const { subject, text, html } = data;
+  const { subject, text, html } = validatedData;
 
   const subscribers = await findAllSubscribers();
 

@@ -6,15 +6,15 @@ import {
   createSubscriber,
   findSubscriberByEmail,
 } from "./newsletterRepository";
+import { subscribeNewsletterSchema } from "./newsletterSchemas";
 import { ISubscriberResponse } from "./newsletterTypes";
-import { validateSubscribeNewsletterInput } from "./newsletterValidation";
 
 export const subscribeNewsletterRecord = async (
   data: SubscribeNewsletterDto,
 ): Promise<ISubscriberResponse> => {
-  validateSubscribeNewsletterInput(data);
+  const validatedData = subscribeNewsletterSchema.parse(data);
 
-  const { email } = data;
+  const { email } = validatedData;
 
   const existingSubscriber = await findSubscriberByEmail(email);
 

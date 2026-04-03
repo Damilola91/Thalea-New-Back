@@ -3,16 +3,16 @@ import { findUserByEmail } from "../user/userRepository";
 import { LoginDto } from "./authDto";
 import { createAppError } from "./authErrors";
 import { mapAuthUserResponse } from "./authMapper";
+import { loginSchema } from "./authSchemas";
 import { comparePassword } from "./authSecurity";
 import { LoginResponse } from "./authTypes";
-import { validateLoginInput } from "./authValidation";
 
 export const loginUser = async (
   loginData: LoginDto,
 ): Promise<LoginResponse> => {
-  validateLoginInput(loginData);
+  const validatedData = loginSchema.parse(loginData);
 
-  const { email, password } = loginData;
+  const { email, password } = validatedData;
 
   const user = await findUserByEmail(email);
 
