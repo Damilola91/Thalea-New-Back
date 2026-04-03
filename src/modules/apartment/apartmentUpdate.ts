@@ -4,17 +4,17 @@ import {
   clearApartmentBookedDatesById,
   updateApartmentById,
 } from "./apartmentRepository";
+import { updateApartmentSchema } from "./apartmentSchemas";
 import { IApartmentResponse } from "./apartmentTypes";
 import { normalizeUpdateApartmentData } from "./apartmentUtils";
-import { validateUpdateApartmentInput } from "./apartmentValidation";
 
 export const updateApartmentRecord = async (
   apartmentId: string,
   updateData: UpdateApartmentDto,
 ): Promise<IApartmentResponse | null> => {
-  validateUpdateApartmentInput(updateData);
+  const validatedData = updateApartmentSchema.parse(updateData);
 
-  const normalizedData = normalizeUpdateApartmentData(updateData);
+  const normalizedData = normalizeUpdateApartmentData(validatedData);
   const updatedApartment = await updateApartmentById(
     apartmentId,
     normalizedData,

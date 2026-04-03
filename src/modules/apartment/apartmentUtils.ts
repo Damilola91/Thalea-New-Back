@@ -1,8 +1,8 @@
-import { CreateApartmentDto, UpdateApartmentDto } from "./apartmentDto";
+import { CreateApartmentInput, UpdateApartmentInput } from "./apartmentSchemas";
 
 export const normalizeCreateApartmentData = (
-  apartmentData: CreateApartmentDto,
-): CreateApartmentDto => {
+  apartmentData: CreateApartmentInput,
+) => {
   return {
     ...apartmentData,
     amenities: {
@@ -18,13 +18,17 @@ export const normalizeCreateApartmentData = (
       bedroom: apartmentData.areaImages?.bedroom ?? [],
       balconyOrTerrace: apartmentData.areaImages?.balconyOrTerrace ?? [],
     },
-    bookedDates: apartmentData.bookedDates ?? [],
+    bookedDates:
+      apartmentData.bookedDates?.map((date) => ({
+        start: date.start,
+        end: date.end,
+      })) ?? [],
   };
 };
 
 export const normalizeUpdateApartmentData = (
-  apartmentData: UpdateApartmentDto,
-): UpdateApartmentDto => {
+  apartmentData: UpdateApartmentInput,
+) => {
   return {
     ...apartmentData,
     ...(apartmentData.amenities
@@ -46,6 +50,14 @@ export const normalizeUpdateApartmentData = (
             bedroom: apartmentData.areaImages.bedroom ?? [],
             balconyOrTerrace: apartmentData.areaImages.balconyOrTerrace ?? [],
           },
+        }
+      : {}),
+    ...(apartmentData.bookedDates
+      ? {
+          bookedDates: apartmentData.bookedDates.map((date) => ({
+            start: date.start,
+            end: date.end,
+          })),
         }
       : {}),
   };
