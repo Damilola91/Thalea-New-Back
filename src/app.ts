@@ -6,6 +6,7 @@ import cors, { CorsOptions } from "cors";
 import cookieParser from "cookie-parser";
 
 import requestLogger from "./middlewares/requestLogger";
+import { helmetMiddleware, globalRateLimit } from "./middlewares/security";
 
 import userRoute from "./modules/user/userRoute";
 import authRoute from "./modules/auth/authRoute";
@@ -42,34 +43,21 @@ const corsOptions: CorsOptions = {
   credentials: true,
 };
 
-/**
- * LOGGER → deve stare in alto
- */
 app.use(requestLogger);
+app.use(helmetMiddleware);
+app.use(globalRateLimit);
 
-/**
- * BODY + COOKIE
- */
+app.use(cors(corsOptions));
 app.use(express.json({ limit: "10kb" }));
+app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 app.use(cookieParser());
 
-/**
- * CORS
- */
-app.use(cors(corsOptions));
-
-/**
- * HEALTH CHECK
- */
 app.get("/", (_req, res) => {
   res.status(200).json({
     message: "Thalea backend running",
   });
 });
 
-/**
- * ROUTES
- */
 app.use("/api/users", userRoute);
 app.use("/api/auth", authRoute);
 app.use("/api/apartments", apartmentRoute);
@@ -79,9 +67,6 @@ app.use("/api/newsletter", newsletterRoute);
 app.use("/api/offers", offerRoute);
 app.use("/api/cloudinary", cloudinaryRoute);
 
-/**
- * ERROR HANDLING (sempre alla fine)
- */
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);
 
