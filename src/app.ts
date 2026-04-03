@@ -12,6 +12,7 @@ import bookingRoute from "./modules/booking/bookingRoute";
 import orderRoute from "./modules/order/orderRoute";
 import newsletterRoute from "./modules/newsletter/newsletterRoute";
 import offerRoute from "./modules/offer/offerRoute";
+import cloudinaryRoute from "./modules/cloudinary/cloudinaryRoute";
 
 import notFoundMiddleware from "./middlewares/notFound";
 import errorMiddleware from "./middlewares/errorResponse";
@@ -57,6 +58,7 @@ app.use("/api/bookings", bookingRoute);
 app.use("/api/orders", orderRoute);
 app.use("/api/newsletter", newsletterRoute);
 app.use("/api/offers", offerRoute);
+app.use("/api/cloudinary", cloudinaryRoute);
 
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);
