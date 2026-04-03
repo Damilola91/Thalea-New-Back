@@ -34,10 +34,13 @@ export const createPaymentOrder = async (
   const amount = Math.round(Number(booking.totalPrice) * 100);
   const receiptEmail = booking.guestEmail;
 
+  const idempotencyKey = `order-${bookingId}-${amount}-${paymentMethod}`;
+
   const paymentIntent = await createStripePaymentIntentForOrder(
     amount,
     paymentMethod,
     receiptEmail,
+    idempotencyKey,
   );
 
   const savedOrder = await createOrder({

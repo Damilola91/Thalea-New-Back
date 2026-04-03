@@ -5,6 +5,7 @@ export const createStripePaymentIntentForOrder = async (
   amount: number,
   paymentMethod: string,
   receiptEmail?: string,
+  idempotencyKey?: string,
 ) => {
   if (!amount || amount <= 0) {
     throw createAppError("Importo non valido per Stripe", 400);
@@ -15,5 +16,6 @@ export const createStripePaymentIntentForOrder = async (
     currency: "eur",
     paymentMethodTypes: [paymentMethod],
     receiptEmail,
+    idempotencyKey,
   });
 };

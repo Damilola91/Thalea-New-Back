@@ -12,3 +12,10 @@ export interface EmailSendResult {
   response: string;
   messageId: string;
 }
+
+export interface NormalizedEmailError extends Error {
+  status?: number;
+  code?: string;
+  retryable?: boolean;
+  cause?: unknown;
+}

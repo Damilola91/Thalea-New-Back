@@ -9,5 +9,8 @@ export const getEmailConfig = () => {
   return {
     senderEmail,
     emailPass,
+    timeoutMs: Number(process.env.EMAIL_TIMEOUT_MS || 10000),
+    retryMaxAttempts: Number(process.env.EMAIL_RETRY_MAX_ATTEMPTS || 3),
+    retryBaseDelayMs: Number(process.env.EMAIL_RETRY_BASE_DELAY_MS || 1000),
   };
 };
