@@ -1,9 +1,11 @@
 import dotenv from "dotenv";
 dotenv.config();
+
 import express from "express";
 import cors, { CorsOptions } from "cors";
 import cookieParser from "cookie-parser";
-import morgan from "morgan";
+
+import requestLogger from "./middlewares/requestLogger";
 
 import userRoute from "./modules/user/userRoute";
 import authRoute from "./modules/auth/authRoute";
@@ -40,17 +42,34 @@ const corsOptions: CorsOptions = {
   credentials: true,
 };
 
-app.use(express.json());
+/**
+ * LOGGER → deve stare in alto
+ */
+app.use(requestLogger);
+
+/**
+ * BODY + COOKIE
+ */
+app.use(express.json({ limit: "10kb" }));
 app.use(cookieParser());
-app.use(morgan("dev"));
+
+/**
+ * CORS
+ */
 app.use(cors(corsOptions));
 
+/**
+ * HEALTH CHECK
+ */
 app.get("/", (_req, res) => {
   res.status(200).json({
     message: "Thalea backend running",
   });
 });
 
+/**
+ * ROUTES
+ */
 app.use("/api/users", userRoute);
 app.use("/api/auth", authRoute);
 app.use("/api/apartments", apartmentRoute);
@@ -60,6 +79,9 @@ app.use("/api/newsletter", newsletterRoute);
 app.use("/api/offers", offerRoute);
 app.use("/api/cloudinary", cloudinaryRoute);
 
+/**
+ * ERROR HANDLING (sempre alla fine)
+ */
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);
 
