@@ -4,8 +4,8 @@ import { createAppError } from "./orderErrors";
 import { mapOrderResponse } from "./orderMapper";
 import { createStripePaymentIntentForOrder } from "./orderPayment";
 import { createOrder } from "./orderRepository";
+import { createPaymentOrderSchema } from "./orderSchemas";
 import { IOrderResponse } from "./orderTypes";
-import { validateCreatePaymentOrderInput } from "./orderValidation";
 
 export const createPaymentOrder = async (
   data: CreatePaymentOrderDto,
@@ -17,9 +17,9 @@ export const createPaymentOrder = async (
   stripeStatus: string;
   order: IOrderResponse;
 }> => {
-  validateCreatePaymentOrderInput(data);
+  const validatedData = createPaymentOrderSchema.parse(data);
 
-  const { bookingId, paymentMethod } = data;
+  const { bookingId, paymentMethod } = validatedData;
 
   const booking = await findRawBookingById(bookingId);
 

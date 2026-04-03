@@ -2,20 +2,20 @@ import { CreateUserDto } from "./userDto";
 import { createAppError } from "./userErrors";
 import { mapUserResponse } from "./userMapper";
 import { createUser, findUserByEmail } from "./userRepository";
+import { createUserSchema } from "./userSchemas";
 import { IUserResponse } from "./userTypes";
-import { validateCreateUserInput } from "./userValidation";
 
 export const createUserRecord = async (
   userData: CreateUserDto,
 ): Promise<IUserResponse> => {
-  validateCreateUserInput(userData);
+  const validatedData = createUserSchema.parse(userData);
 
-  const existingUser = await findUserByEmail(userData.email);
+  const existingUser = await findUserByEmail(validatedData.email);
 
   if (existingUser) {
     throw createAppError("Email già in uso", 409);
   }
 
-  const createdUser = await createUser(userData);
+  const createdUser = await createUser(validatedData);
   return mapUserResponse(createdUser);
 };

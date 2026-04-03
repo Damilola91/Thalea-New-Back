@@ -1,4 +1,3 @@
-import { CreateOfferDto, UpdateOfferDto } from "./offerDto";
 import { ConditionType, DiscountType, OfferType } from "./offerTypes";
 import { createAppError } from "./offerErrors";
 
@@ -49,40 +48,4 @@ export const validateOfferBusinessRules = (
   ) {
     throw createAppError("Fixed discountValue must be greater than 0", 400);
   }
-};
-
-export const validateCreateOfferInput = (data: CreateOfferDto): void => {
-  if (!data.title?.trim()) {
-    throw createAppError("title is required", 400);
-  }
-
-  if (!data.type) {
-    throw createAppError("type is required", 400);
-  }
-
-  if (!data.discountType) {
-    throw createAppError("discountType is required", 400);
-  }
-
-  if (data.discountValue === undefined) {
-    throw createAppError("discountValue is required", 400);
-  }
-
-  if (!data.startDate) {
-    throw createAppError("startDate is required", 400);
-  }
-
-  if (!data.endDate) {
-    throw createAppError("endDate is required", 400);
-  }
-
-  validateOfferBusinessRules(data);
-};
-
-export const validateUpdateOfferInput = (data: UpdateOfferDto): void => {
-  if (data.title !== undefined && !data.title.trim()) {
-    throw createAppError("title cannot be empty", 400);
-  }
-
-  validateOfferBusinessRules(data);
 };

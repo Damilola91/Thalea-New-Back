@@ -5,17 +5,17 @@ import {
   findUserByEmailExcludingUserId,
   updateUserById,
 } from "./userRepository";
+import { updateUserSchema } from "./userSchemas";
 import { hashPassword } from "./userSecurity";
 import { IUserResponse } from "./userTypes";
-import { validateUpdateUserInput } from "./userValidation";
 
 export const updateUserRecord = async (
   userId: string,
   updateData: UpdateUserDto,
 ): Promise<IUserResponse | null> => {
-  validateUpdateUserInput(updateData);
+  const validatedData = updateUserSchema.parse(updateData);
 
-  const dataToUpdate = { ...updateData };
+  const dataToUpdate = { ...validatedData };
 
   if (dataToUpdate.email) {
     const existingUser = await findUserByEmailExcludingUserId(

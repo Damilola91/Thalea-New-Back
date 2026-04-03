@@ -2,14 +2,14 @@ import { UpdatePasswordDto } from "./userDto";
 import { createAppError } from "./userErrors";
 import { updateUserById } from "./userRepository";
 import { hashPassword, verifyResetPasswordToken } from "./userSecurity";
-import { validateUpdatePasswordInput } from "./userValidation";
+import { updatePasswordSchema } from "./userSchemas";
 
 export const updateUserPasswordRecord = async (
   data: UpdatePasswordDto,
 ): Promise<void> => {
-  validateUpdatePasswordInput(data);
+  const validatedData = updatePasswordSchema.parse(data);
 
-  const { userId, newPassword, token } = data;
+  const { userId, newPassword, token } = validatedData;
 
   verifyResetPasswordToken(token, userId);
 

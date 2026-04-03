@@ -1,18 +1,16 @@
 import { UpdateOfferDto } from "./offerDto";
 import { mapOfferResponse } from "./offerMapper";
 import { findOfferById, updateOfferById } from "./offerRepository";
+import { updateOfferSchema } from "./offerSchemas";
 import { IOfferResponse } from "./offerTypes";
 import { normalizeUpdateOfferData, validateOfferDateRange } from "./offerUtils";
-import {
-  validateOfferBusinessRules,
-  validateUpdateOfferInput,
-} from "./offerValidation";
+import { validateOfferBusinessRules } from "./offerValidation";
 
 export const updateOfferRecord = async (
   offerId: string,
   data: UpdateOfferDto,
 ): Promise<IOfferResponse | null> => {
-  validateUpdateOfferInput(data);
+  const validatedData = updateOfferSchema.parse(data);
 
   const existingOffer = await findOfferById(offerId);
 
@@ -20,7 +18,7 @@ export const updateOfferRecord = async (
     return null;
   }
 
-  const normalizedData = normalizeUpdateOfferData(data);
+  const normalizedData = normalizeUpdateOfferData(validatedData);
 
   const mergedData = {
     title: normalizedData.title ?? existingOffer.title,
