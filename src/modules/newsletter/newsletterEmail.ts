@@ -1,4 +1,4 @@
-import { createMailerTransport } from "../../shared/utils/email/createMailerTransport";
+import { sendEmail } from "../../shared/integrations/email/emailAdapter";
 
 interface SendEmailParams {
   to: string;
@@ -13,16 +13,7 @@ export const sendNewsletterEmail = async ({
   text,
   html,
 }: SendEmailParams) => {
-  const senderEmail = process.env.SENDER_EMAIL;
-
-  if (!senderEmail) {
-    throw new Error("SENDER_EMAIL mancante nel file .env");
-  }
-
-  const transporter = createMailerTransport();
-
-  return await transporter.sendMail({
-    from: senderEmail,
+  return await sendEmail({
     to,
     subject,
     text,

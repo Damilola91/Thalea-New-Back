@@ -1,4 +1,5 @@
-import { createMailerTransport } from "./createMailerTransport";
+import { sendEmail } from "../../integrations/email/emailAdapter";
+import { getEmailConfig } from "../../integrations/email/emailConfig";
 
 interface SendBookingConfirmationEmailParams {
   guestEmail: string;
@@ -21,11 +22,7 @@ export const sendBookingConfirmationEmail = async ({
   totalPrice,
   bookingCode,
 }: SendBookingConfirmationEmailParams): Promise<void> => {
-  const senderEmail = process.env.SENDER_EMAIL;
-
-  if (!senderEmail) {
-    throw new Error("SENDER_EMAIL mancante nel file .env");
-  }
+  getEmailConfig();
 
   const fixedCheckOutDate = new Date(checkOut);
   fixedCheckOutDate.setUTCHours(10, 0, 0, 0);
@@ -35,13 +32,11 @@ export const sendBookingConfirmationEmail = async ({
     fixedCheckInDate.setUTCHours(14, 0, 0, 0);
   }
 
-  const transporter = createMailerTransport();
-
-  const mailOptions = {
-    from: senderEmail,
-    to: guestEmail,
-    subject: `Booking Confirmation - Your Stay at ${apartment}`,
-    text: `Dear ${guestName},
+  try {
+    await sendEmail({
+      to: guestEmail,
+      subject: `Booking Confirmation - Your Stay at ${apartment}`,
+      text: `Dear ${guestName},
 
 Your booking has been successfully created!
 
@@ -57,7 +52,7 @@ Thank you for choosing us!
 
 Best regards,
 The Team`,
-    html: `<h1>Booking Confirmation</h1>
+      html: `<h1>Booking Confirmation</h1>
       <p>Dear ${guestName},</p>
       <p>Your booking has been successfully created!</p>
       <h3>Details of your stay:</h3>
@@ -72,10 +67,7 @@ The Team`,
       <p>Thank you for choosing us!</p>
       <p>Best regards,</p>
       <p>The Team</p>`,
-  };
-
-  try {
-    await transporter.sendMail(mailOptions);
+    });
   } catch (error) {
     console.error("Failed to send confirmation email:", error);
     throw new Error("Failed to send confirmation email.");

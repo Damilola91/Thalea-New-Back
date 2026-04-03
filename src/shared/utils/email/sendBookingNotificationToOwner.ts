@@ -1,4 +1,5 @@
-import { createMailerTransport } from "./createMailerTransport";
+import { sendEmail } from "../../integrations/email/emailAdapter";
+import { getEmailConfig } from "../../integrations/email/emailConfig";
 
 interface SendBookingNotificationToOwnerParams {
   guestName: string;
@@ -21,11 +22,7 @@ export const sendBookingNotificationToOwner = async ({
   totalPrice,
   bookingCode,
 }: SendBookingNotificationToOwnerParams): Promise<void> => {
-  const senderEmail = process.env.SENDER_EMAIL;
-
-  if (!senderEmail) {
-    throw new Error("SENDER_EMAIL mancante nel file .env");
-  }
+  const { senderEmail } = getEmailConfig();
 
   const fixedCheckOutDate = new Date(checkOut);
   fixedCheckOutDate.setUTCHours(10, 0, 0, 0);
@@ -35,10 +32,8 @@ export const sendBookingNotificationToOwner = async ({
     fixedCheckInDate.setUTCHours(14, 0, 0, 0);
   }
 
-  const transporter = createMailerTransport();
-
   try {
-    await transporter.sendMail({
+    await sendEmail({
       from: `"Booking System" <${senderEmail}>`,
       to: senderEmail,
       subject: `Nuova prenotazione ricevuta - ${apartment}`,
