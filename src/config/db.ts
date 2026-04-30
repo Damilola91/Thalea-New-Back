@@ -1,22 +1,24 @@
 import mongoose from "mongoose";
+import { env } from "./env";
+import logger from "../shared/utils/logger/logger";
 
 const initDB = async (): Promise<void> => {
   try {
-    const dbUri = process.env.DB_URI;
+    const dbUri = env.DB_URI;
 
-    console.log("DB_URI presente:", !!dbUri);
-
-    if (!dbUri) {
-      throw new Error("DB_URI mancante nel file .env");
-    }
-
+    /**
+     * Mask URI (sicurezza log)
+     */
     const safeUri = dbUri.replace(/\/\/(.*?):(.*?)@/, "//***:***@");
-    console.log("DB_URI backend:", safeUri);
+
+    logger.info("Connecting to database...");
+    logger.debug({ dbUri: safeUri }, "Database URI");
 
     await mongoose.connect(dbUri);
-    console.log("Database connection successfully");
+
+    logger.info("Database connected successfully");
   } catch (error) {
-    console.error("Database connection error:", error);
+    logger.error({ err: error }, "Database connection failed");
     process.exit(1);
   }
 };

@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { env } from "../../../config/env";
 import { getEmailConfig } from "./emailConfig";
 import { normalizeEmailError } from "./emailErrors";
 import { logEmailError, logEmailEvent } from "./emailLogger";
@@ -16,9 +17,7 @@ const createEmailTransport = () => {
       pass: emailPass,
     },
     tls:
-      process.env.NODE_ENV !== "production"
-        ? { rejectUnauthorized: false }
-        : undefined,
+      env.NODE_ENV !== "production" ? { rejectUnauthorized: false } : undefined,
   });
 };
 

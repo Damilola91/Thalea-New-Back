@@ -1,12 +1,13 @@
 import pino from "pino";
+import { env } from "../../../config/env";
 
-const isProduction = process.env.NODE_ENV === "production";
+const isProduction = env.NODE_ENV === "production";
 
 const logger = pino({
-  level: process.env.LOG_LEVEL || "info",
+  level: env.LOG_LEVEL,
   base: {
-    service: process.env.SERVICE_NAME || "thalea-new-back",
-    env: process.env.NODE_ENV || "development",
+    service: env.SERVICE_NAME,
+    env: env.NODE_ENV,
   },
   timestamp: pino.stdTimeFunctions.isoTime,
   transport: isProduction

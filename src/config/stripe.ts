@@ -1,12 +1,6 @@
 import Stripe from "stripe";
+import { env } from "../config/env";
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-
-if (!stripeSecretKey) {
-  throw new Error("STRIPE_SECRET_KEY mancante nel file .env");
-}
-
-export const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: (process.env.STRIPE_API_VERSION ||
-    "2025-02-24.acacia") as Stripe.LatestApiVersion,
+export const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
+  apiVersion: env.STRIPE_API_VERSION as Stripe.LatestApiVersion,
 });
