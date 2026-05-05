@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { JwtPayload } from "../../shared/types/jwtPayload";
 import { createAppError } from "./authErrors";
 
 export const comparePassword = async (
@@ -9,7 +10,7 @@ export const comparePassword = async (
   return await bcrypt.compare(plainPassword, hashedPassword);
 };
 
-export const verifyAuthToken = (token: string) => {
+export const verifyAuthToken = (token: string): JwtPayload => {
   const jwtSecret = process.env.JWT_SECRET;
 
   if (!jwtSecret) {
@@ -17,12 +18,7 @@ export const verifyAuthToken = (token: string) => {
   }
 
   try {
-    return jwt.verify(token, jwtSecret) as {
-      userId: string;
-      name: string;
-      email: string;
-      role: string;
-    };
+    return jwt.verify(token, jwtSecret) as JwtPayload;
   } catch {
     throw createAppError("Token non valido", 401);
   }

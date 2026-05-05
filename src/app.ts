@@ -1,13 +1,8 @@
-import dotenv from "dotenv";
-dotenv.config();
-
 import express from "express";
 import cors, { CorsOptions } from "cors";
 import cookieParser from "cookie-parser";
-
 import requestLogger from "./middlewares/requestLogger";
 import { helmetMiddleware, globalRateLimit } from "./middlewares/security";
-
 import userRoute from "./modules/user/userRoute";
 import authRoute from "./modules/auth/authRoute";
 import apartmentRoute from "./modules/apartment/apartmentRoute";
@@ -16,7 +11,6 @@ import orderRoute from "./modules/order/orderRoute";
 import newsletterRoute from "./modules/newsletter/newsletterRoute";
 import offerRoute from "./modules/offer/offerRoute";
 import cloudinaryRoute from "./modules/cloudinary/cloudinaryRoute";
-
 import notFoundMiddleware from "./middlewares/notFound";
 import errorMiddleware from "./middlewares/errorResponse";
 

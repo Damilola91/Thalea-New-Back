@@ -1,4 +1,5 @@
 import { Document, Types } from "mongoose";
+import { IApartmentDocument } from "../apartment/apartmentTypes";
 
 export const bookingStatuses = ["pending", "confirmed", "cancelled"] as const;
 export type BookingStatus = (typeof bookingStatuses)[number];
@@ -27,7 +28,7 @@ export interface IBookingDocument extends IBooking, Document {
 
 export interface IBookingResponse {
   id: string;
-  apartment: Types.ObjectId | string | unknown;
+  apartment: Types.ObjectId | string | IApartmentDocument;
   guestName: string;
   guestEmail: string;
   guestPhone?: string;

@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import { IUserDocument } from "../../modules/user/userTypes";
+import { JwtPayload } from "../types/jwtPayload";
 
 export const generateToken = (user: IUserDocument): string => {
   const jwtSecret = process.env.JWT_SECRET;
@@ -8,16 +9,12 @@ export const generateToken = (user: IUserDocument): string => {
     throw new Error("JWT_SECRET mancante nel file .env");
   }
 
-  return jwt.sign(
-    {
-      userId: user._id.toString(),
-      name: user.name,
-      email: user.email,
-      role: user.role,
-    },
-    jwtSecret,
-    {
-      expiresIn: "3h",
-    },
-  );
+  const payload: Omit<JwtPayload, "iat" | "exp"> = {
+    userId: user._id.toString(),
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  };
+
+  return jwt.sign(payload, jwtSecret, { expiresIn: "3h" });
 };

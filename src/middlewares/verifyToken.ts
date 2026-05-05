@@ -1,10 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-
-interface JwtPayload {
-  userId: string;
-  role: string;
-}
+import { JwtPayload } from "../shared/types/jwtPayload";
 
 declare module "express-serve-static-core" {
   interface Request {
@@ -44,6 +40,8 @@ export const verifyToken = (
 
     req.user = {
       userId: decoded.userId,
+      name: decoded.name,
+      email: decoded.email,
       role: decoded.role,
     };
 
