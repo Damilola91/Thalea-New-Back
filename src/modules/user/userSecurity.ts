@@ -8,6 +8,18 @@ export const hashPassword = async (password: string): Promise<string> => {
   return await bcrypt.hash(password, salt);
 };
 
+export const generateResetToken = (userId: string): string => {
+  const jwtSecret = process.env.JWT_SECRET;
+
+  if (!jwtSecret) {
+    throw new Error("JWT_SECRET mancante nel file .env");
+  }
+
+  return jwt.sign({ userId, purpose: "reset" }, jwtSecret, {
+    expiresIn: "15m",
+  });
+};
+
 export const verifyResetPasswordToken = (
   token: string,
   expectedUserId: string,
@@ -33,7 +45,15 @@ export const verifyResetPasswordToken = (
     throw error;
   }
 
-  if (typeof payload === "string" || payload.userId !== expectedUserId) {
+  if (typeof payload === "string") {
+    throw createAppError("Token non valido", 403);
+  }
+
+  if (payload.purpose !== "reset") {
+    throw createAppError("Token non valido per questo scopo", 403);
+  }
+
+  if (payload.userId !== expectedUserId) {
     throw createAppError("Token non valido per questo utente", 403);
   }
 

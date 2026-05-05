@@ -44,3 +44,9 @@ export const updatePasswordSchema = z.object({
 export type CreateUserSchemaData = z.infer<typeof createUserSchema>;
 export type UpdateUserSchemaData = z.infer<typeof updateUserSchema>;
 export type UpdatePasswordSchemaData = z.infer<typeof updatePasswordSchema>;
+
+export const forgotPasswordSchema = z.object({
+  email: z.email("Email non valida"),
+});
+
+export type ForgotPasswordSchemaData = z.infer<typeof forgotPasswordSchema>;

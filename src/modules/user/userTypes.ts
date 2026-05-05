@@ -28,6 +28,7 @@ export interface IUserResponse {
 
 export interface JwtResetPasswordPayload {
   userId: string;
+  purpose: "reset";
   iat?: number;
   exp?: number;
 }

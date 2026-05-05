@@ -19,3 +19,7 @@ export interface UpdatePasswordDto {
   newPassword: string;
   token: string;
 }
+
+export interface ForgotPasswordDto {
+  email: string;
+}

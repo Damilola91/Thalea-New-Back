@@ -2,11 +2,12 @@ import { NextFunction, Request, Response } from "express";
 import {
   createUserService,
   deleteUserService,
+  forgotPasswordService,
   getAllUsersService,
   updatePasswordService,
   updateUserService,
 } from "./userService";
-import { CreateUserDto, UpdateUserDto } from "./userDto";
+import { CreateUserDto, ForgotPasswordDto, UpdateUserDto } from "./userDto";
 
 export const createUserController = async (
   req: Request<{}, {}, CreateUserDto>,
@@ -71,6 +72,25 @@ export const updatePasswordController = async (
     res.status(200).json({
       statusCode: 200,
       message: "Password aggiornata con successo",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const forgotPasswordController = async (
+  req: Request<{}, {}, ForgotPasswordDto>,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    await forgotPasswordService(req.body.email);
+
+    // Risposta generica — non rivela se l'email esiste nel sistema
+    res.status(200).json({
+      statusCode: 200,
+      message:
+        "Se l'email è registrata, riceverai un link per reimpostare la password.",
     });
   } catch (error) {
     next(error);

@@ -1,9 +1,9 @@
 import { CreateUserDto, UpdatePasswordDto, UpdateUserDto } from "./userDto";
 import { createUserRecord } from "./userCreation";
+import { forgotPasswordRecord, updateUserPasswordRecord } from "./userPassword";
 import { mapUserResponse } from "./userMapper";
 import { deleteUserById, findAllUsers } from "./userRepository";
 import { IUserResponse } from "./userTypes";
-import { updateUserPasswordRecord } from "./userPassword";
 import { updateUserRecord } from "./userUpdate";
 
 export const createUserService = async (
@@ -23,6 +23,10 @@ export const updatePasswordService = async (
   data: UpdatePasswordDto,
 ): Promise<void> => {
   await updateUserPasswordRecord(data);
+};
+
+export const forgotPasswordService = async (email: string): Promise<void> => {
+  await forgotPasswordRecord(email);
 };
 
 export const getAllUsersService = async (): Promise<IUserResponse[]> => {
