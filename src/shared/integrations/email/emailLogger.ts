@@ -1,28 +1,15 @@
+import logger from "../../utils/logger/logger";
+
 export const logEmailEvent = (
   event: string,
   payload: Record<string, unknown>,
 ): void => {
-  console.log(
-    JSON.stringify({
-      scope: "email",
-      event,
-      timestamp: new Date().toISOString(),
-      ...payload,
-    }),
-  );
+  logger.info({ scope: "email", event, ...payload });
 };
 
 export const logEmailError = (
   event: string,
   payload: Record<string, unknown>,
 ): void => {
-  console.error(
-    JSON.stringify({
-      scope: "email",
-      level: "error",
-      event,
-      timestamp: new Date().toISOString(),
-      ...payload,
-    }),
-  );
+  logger.error({ scope: "email", event, ...payload });
 };

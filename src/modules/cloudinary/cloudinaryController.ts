@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import cloudinary from "../../shared/integrations/cloudinary/cloudinaryConfig";
 
 interface UploadedFileResponse {
   url?: string;
@@ -32,6 +33,55 @@ export const uploadFileToCloudinary = async (
     res.status(201).json({
       message: "File uploaded successfully",
       file: uploadedFile,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteFileFromCloudinary = async (
+  req: Request<{ publicId: string }>,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { publicId } = req.params;
+
+    if (!publicId) {
+      res.status(400).json({ message: "public_id mancante" });
+      return;
+    }
+
+    // Prima prova come image, poi come video
+    const imageResult = await cloudinary.uploader.destroy(publicId, {
+      resource_type: "image",
+    });
+
+    if (imageResult.result === "ok") {
+      res.status(200).json({
+        statusCode: 200,
+        message: "File eliminato con successo",
+        public_id: publicId,
+      });
+      return;
+    }
+
+    const videoResult = await cloudinary.uploader.destroy(publicId, {
+      resource_type: "video",
+    });
+
+    if (videoResult.result === "ok") {
+      res.status(200).json({
+        statusCode: 200,
+        message: "File eliminato con successo",
+        public_id: publicId,
+      });
+      return;
+    }
+
+    res.status(404).json({
+      statusCode: 404,
+      message: "File non trovato su Cloudinary",
     });
   } catch (error) {
     next(error);

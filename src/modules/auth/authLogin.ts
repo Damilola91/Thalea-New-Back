@@ -1,4 +1,5 @@
 import { generateToken } from "../../shared/utils/generateToken";
+import { generateRefreshToken } from "../../shared/utils/generateRefreshToken";
 import { findUserByEmail } from "../user/userRepository";
 import { LoginDto } from "./authDto";
 import { createAppError } from "./authErrors";
@@ -27,9 +28,11 @@ export const loginUser = async (
   }
 
   const token = generateToken(user);
+  const refreshToken = generateRefreshToken(user);
 
   return {
     token,
+    refreshToken,
     user: mapAuthUserResponse(user),
   };
 };

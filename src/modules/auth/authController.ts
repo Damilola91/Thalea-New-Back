@@ -1,7 +1,25 @@
 import { NextFunction, Request, Response } from "express";
+import jwt from "jsonwebtoken";
+import { env } from "../../config/env";
+import {
+  addToBlacklist,
+  isBlacklisted,
+} from "../../shared/auth/tokenBlacklist";
+import { generateToken } from "../../shared/utils/generateToken";
+import { findUserById } from "../user/userRepository";
 import { LoginDto } from "./authDto";
+import { createAppError } from "./authErrors";
 import { getAuthenticatedUserFromToken } from "./authSession";
 import { loginService } from "./authService";
+
+const isProduction = env.NODE_ENV === "production";
+
+const cookieOptions = {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: (isProduction ? "strict" : "lax") as "strict" | "lax",
+  path: "/",
+};
 
 export const loginController = async (
   req: Request<{}, {}, LoginDto>,
@@ -9,14 +27,18 @@ export const loginController = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { token, user } = await loginService(req.body);
+    const { token, refreshToken, user } = await loginService(req.body);
 
+    // Access token — 3 ore
     res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      ...cookieOptions,
       maxAge: 3 * 60 * 60 * 1000,
-      path: "/",
+    });
+
+    // Refresh token — 7 giorni
+    res.cookie("refreshToken", refreshToken, {
+      ...cookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     res.status(200).json({
@@ -30,19 +52,83 @@ export const loginController = async (
   }
 };
 
-export const logoutController = (_req: Request, res: Response): void => {
-  res.clearCookie("token", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-    path: "/",
-  });
+export const logoutController = (req: Request, res: Response): void => {
+  // Blacklista il token Bearer se presente nell'header
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith("Bearer ")) {
+    const token = authHeader.split(" ")[1];
+    try {
+      const decoded = jwt.decode(token) as { exp?: number } | null;
+      if (decoded?.exp) {
+        addToBlacklist(token, decoded.exp * 1000);
+      }
+    } catch {
+      // Token malformato — ignoriamo, i cookie vengono comunque rimossi
+    }
+  }
+
+  res.clearCookie("token", cookieOptions);
+  res.clearCookie("refreshToken", cookieOptions);
 
   res.status(200).json({
     statusCode: 200,
     success: true,
     message: "Logout riuscito",
   });
+};
+
+export const refreshTokenController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const refreshToken = req.cookies?.refreshToken;
+
+    if (!refreshToken) {
+      throw createAppError("Refresh token mancante", 401);
+    }
+
+    if (isBlacklisted(refreshToken)) {
+      throw createAppError("Refresh token non valido", 401);
+    }
+
+    let payload: { userId: string; purpose: string };
+
+    try {
+      payload = jwt.verify(refreshToken, env.JWT_SECRET) as {
+        userId: string;
+        purpose: string;
+      };
+    } catch {
+      throw createAppError("Refresh token non valido o scaduto", 401);
+    }
+
+    if (payload.purpose !== "refresh") {
+      throw createAppError("Token non valido per questo scopo", 403);
+    }
+
+    const user = await findUserById(payload.userId);
+
+    if (!user) {
+      throw createAppError("Utente non trovato", 404);
+    }
+
+    const newAccessToken = generateToken(user);
+
+    res.cookie("token", newAccessToken, {
+      ...cookieOptions,
+      maxAge: 3 * 60 * 60 * 1000,
+    });
+
+    res.status(200).json({
+      statusCode: 200,
+      message: "Token rinnovato",
+      token: newAccessToken,
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const meController = (req: Request, res: Response): void => {
@@ -66,9 +152,6 @@ export const meController = (req: Request, res: Response): void => {
     const message =
       error instanceof Error ? error.message : "Errore interno del server";
 
-    res.status(statusCode).json({
-      statusCode,
-      message,
-    });
+    res.status(statusCode).json({ statusCode, message });
   }
 };
