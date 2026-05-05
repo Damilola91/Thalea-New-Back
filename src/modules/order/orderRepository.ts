@@ -35,6 +35,12 @@ export const findRawOrderById = async (
   return await OrderModel.findById(orderId);
 };
 
+export const findOrderByStripePaymentIntentId = async (
+  stripePaymentIntentId: string,
+): Promise<IOrderDocument | null> => {
+  return await OrderModel.findOne({ stripePaymentIntentId });
+};
+
 export const updateOrderStatusById = async (
   orderId: string,
   status: OrderStatus,

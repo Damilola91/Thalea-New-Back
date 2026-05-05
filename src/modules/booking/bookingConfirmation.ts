@@ -26,18 +26,20 @@ export const getValidatedPaymentContext = async (
   paymentIntentId: string,
   orderId: string,
 ) => {
-  const [order, paymentIntent] = await Promise.all([
-    findRawOrderById(orderId),
-    retrieveStripePaymentIntent(paymentIntentId),
-  ]);
+  // Sequenziale: prima verifica l'ordine in DB, poi chiama Stripe
+  // Evita una chiamata API a Stripe se l'ordine non esiste
+  const order = await findRawOrderById(orderId);
 
   if (!order) {
     throw createAppError("Ordine non trovato", 404);
   }
 
-  if (!paymentIntent) {
-    throw createAppError("Pagamento non trovato", 404);
+  // Verifica che il paymentIntentId corrisponda a quello salvato sull'ordine
+  if (order.stripePaymentIntentId !== paymentIntentId) {
+    throw createAppError("Il paymentIntentId non corrisponde all'ordine", 400);
   }
+
+  const paymentIntent = await retrieveStripePaymentIntent(paymentIntentId);
 
   if (paymentIntent.status !== "succeeded") {
     throw createAppError("Pagamento non riuscito", 400);

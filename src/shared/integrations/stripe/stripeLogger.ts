@@ -1,28 +1,15 @@
+import logger from "../../utils/logger/logger";
+
 export const logStripeEvent = (
   event: string,
   payload: Record<string, unknown>,
 ): void => {
-  console.log(
-    JSON.stringify({
-      scope: "stripe",
-      event,
-      timestamp: new Date().toISOString(),
-      ...payload,
-    }),
-  );
+  logger.info({ scope: "stripe", event, ...payload });
 };
 
 export const logStripeError = (
   event: string,
   payload: Record<string, unknown>,
 ): void => {
-  console.error(
-    JSON.stringify({
-      scope: "stripe",
-      level: "error",
-      event,
-      timestamp: new Date().toISOString(),
-      ...payload,
-    }),
-  );
+  logger.error({ scope: "stripe", event, ...payload });
 };

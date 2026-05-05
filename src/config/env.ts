@@ -23,6 +23,9 @@ const envSchema = z.object({
 
   STRIPE_SECRET_KEY: z.string().min(1, "STRIPE_SECRET_KEY is required"),
   STRIPE_API_VERSION: z.string().min(1, "STRIPE_API_VERSION is required"),
+  STRIPE_WEBHOOK_SECRET: z
+    .string()
+    .startsWith("whsec_", "STRIPE_WEBHOOK_SECRET must start with whsec_"),
   STRIPE_TIMEOUT_MS: z.coerce.number().positive(),
   STRIPE_RETRY_MAX_ATTEMPTS: z.coerce.number().int().nonnegative(),
   STRIPE_RETRY_BASE_DELAY_MS: z.coerce.number().int().nonnegative(),
