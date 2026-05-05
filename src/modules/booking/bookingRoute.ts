@@ -11,7 +11,7 @@ import {
 import { verifyToken } from "../../middlewares/verifyToken";
 import { authorizeAdmin } from "../../middlewares/authorizeAdmin";
 import { bookingRateLimit } from "../../middlewares/security";
-import { sanitizeInput } from "../../middlewares/sanitizeInput";
+import sanitizeInput from "../../middlewares/sanitizeInput";
 
 const router = Router();
 

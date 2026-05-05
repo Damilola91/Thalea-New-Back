@@ -30,25 +30,10 @@ export const getLodgifyBookedDates = async (
       startISO,
     )}&end=${encodeURIComponent(endISO)}&includeDetails=true`;
 
-    const response = await lodgifyRequest(url, { method: "GET" });
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => "");
-      const message =
-        errorText && errorText.trim() !== ""
-          ? errorText
-          : `Errore HTTP ${response.status}: ${
-              response.statusText || "Accesso negato"
-            }`;
-
-      return {
-        occupiedDates: [],
-        error: message,
-        status: response.status,
-      };
-    }
-
-    const data = (await response.json()) as LodgifyAvailabilityItem[];
+    // lodgifyRequest restituisce già il JSON parsato — non è una Response di fetch
+    const data = (await lodgifyRequest(url, {
+      method: "GET",
+    })) as LodgifyAvailabilityItem[];
 
     return {
       occupiedDates: extractOccupiedDatesFromAvailability(data),
@@ -76,46 +61,26 @@ export const checkLodgifyAvailability = async (
 
     const url = `https://api.lodgify.com/v2/availability/${getLodgifyPropertyId()}?start=${startDate}&end=${endDate}`;
 
-    const response = await lodgifyRequest(url, { method: "GET" });
+    // lodgifyRequest restituisce già il JSON parsato
+    const data = (await lodgifyRequest(url, {
+      method: "GET",
+    })) as LodgifyAvailabilityItem[];
 
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => "");
-      const message =
-        errorText && errorText.trim() !== ""
-          ? errorText
-          : `Errore HTTP ${response.status}: ${
-              response.statusText || "Accesso negato"
-            }`;
-
-      return {
-        available: null,
-        error: message,
-        status: response.status,
-      };
+    if (!Array.isArray(data) || data.length === 0) {
+      return { available: false, data: [] };
     }
 
-    const data = (await response.json()) as LodgifyAvailabilityItem[];
+    const isAvailable = data.every((property) => {
+      if (!property.periods || !Array.isArray(property.periods)) {
+        return false;
+      }
 
-    let isAvailable = true;
+      return property.periods.every(
+        (period) => period.available === 1 && !period.closed_period,
+      );
+    });
 
-    if (Array.isArray(data) && data.length > 0) {
-      isAvailable = data.every((property) => {
-        if (!property.periods || !Array.isArray(property.periods)) {
-          return false;
-        }
-
-        return property.periods.every((period) => {
-          return period.available === 1 && !period.closed_period;
-        });
-      });
-    } else {
-      isAvailable = false;
-    }
-
-    return {
-      available: isAvailable,
-      data,
-    };
+    return { available: isAvailable, data };
   } catch (error) {
     return {
       available: null,

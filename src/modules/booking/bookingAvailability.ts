@@ -65,6 +65,24 @@ export const buildAvailabilityResponse = async (
     endDate,
   );
 
+  // Lodgify in errore → blocca con unavailable, non continuare
+  // Le date potrebbero essere occupate da Booking.com o altri canali
+  if (lodgifyResult.available === null) {
+    return {
+      results: [],
+      availabilityCheck: {
+        lodgify: "error",
+        internalDatabase: "skipped",
+        period: { startDate, endDate },
+        lodgifyError: lodgifyResult.error ?? "Errore sconosciuto",
+      },
+      message:
+        "Impossibile verificare la disponibilità in questo momento. Riprova tra qualche istante.",
+      available: false,
+    };
+  }
+
+  // Lodgify dice non disponibile → blocca subito senza toccare il DB
   if (lodgifyResult.available === false) {
     return {
       message: "Periodo non disponibile secondo il channel manager Lodgify.",
@@ -75,6 +93,7 @@ export const buildAvailabilityResponse = async (
     };
   }
 
+  // Lodgify ok → verifica anche il DB interno
   const nights = calculateNights(checkInDate, checkOutDate);
   const apartments = await findAllApartments();
 
@@ -86,7 +105,7 @@ export const buildAvailabilityResponse = async (
     return {
       message: "Nessun appartamento disponibile per il numero di ospiti.",
       availabilityCheck: {
-        lodgify: lodgifyResult.available === null ? "error" : "available",
+        lodgify: "available",
         internalDatabase: "no_apartments",
         period: { startDate, endDate },
       },
@@ -118,10 +137,9 @@ export const buildAvailabilityResponse = async (
   return {
     results,
     availabilityCheck: {
-      lodgify: lodgifyResult.available === null ? "error" : "available",
+      lodgify: "available",
       internalDatabase: "checked",
       period: { startDate, endDate },
-      lodgifyError: lodgifyResult.error || null,
     },
   };
 };

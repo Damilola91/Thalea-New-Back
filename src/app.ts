@@ -11,13 +11,15 @@ import orderRoute from "./modules/order/orderRoute";
 import newsletterRoute from "./modules/newsletter/newsletterRoute";
 import offerRoute from "./modules/offer/offerRoute";
 import cloudinaryRoute from "./modules/cloudinary/cloudinaryRoute";
+import stripeWebhookRoute from "./modules/stripe/stripeWebhookRoute";
 import notFoundMiddleware from "./middlewares/notFound";
 import errorMiddleware from "./middlewares/errorResponse";
+import { env } from "./config/env";
 
 const app = express();
 
 const allowedOrigins: string[] = [
-  process.env.FRONTEND_URL || "http://localhost:3000",
+  env.FRONTEND_URL,
   "https://www.thaleapalermoapartment.it",
   "https://nuovo-frontend-thalea.vercel.app",
 ];
@@ -40,6 +42,11 @@ const corsOptions: CorsOptions = {
 app.use(requestLogger);
 app.use(helmetMiddleware);
 app.use(globalRateLimit);
+
+// Il webhook Stripe deve stare QUI — prima di express.json().
+// Ha bisogno del body grezzo (Buffer) per verificare la firma.
+// express.raw() è montato direttamente sulla route, non globalmente.
+app.use("/api/stripe", stripeWebhookRoute);
 
 app.use(cors(corsOptions));
 app.use(express.json({ limit: "10kb" }));

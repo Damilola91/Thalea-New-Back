@@ -51,3 +51,25 @@ export const updateOrderStatusById = async (
     { new: true },
   );
 };
+
+export const updateOrderStatusIfPending = async (
+  orderId: string,
+): Promise<boolean> => {
+  const result = await OrderModel.updateOne(
+    { _id: orderId, status: "pending" },
+    { $set: { status: "paid" } },
+  );
+
+  return result.modifiedCount === 1;
+};
+
+export const markOrderAsFailedIfPending = async (
+  orderId: string,
+): Promise<boolean> => {
+  const result = await OrderModel.updateOne(
+    { _id: orderId, status: "pending" },
+    { $set: { status: "failed" } },
+  );
+
+  return result.modifiedCount === 1;
+};

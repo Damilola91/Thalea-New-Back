@@ -6,7 +6,8 @@ import {
 } from "../../shared/integrations/stripe/stripeLogger";
 import {
   findOrderByStripePaymentIntentId,
-  updateOrderStatusById,
+  updateOrderStatusIfPending,
+  markOrderAsFailedIfPending,
 } from "../order/orderRepository";
 import {
   confirmBookingRecord,
@@ -18,25 +19,25 @@ export const handleStripeWebhook = async (
   rawBody: Buffer,
   signature: string,
 ): Promise<void> => {
-  // Verifica la firma — se non corrisponde lancia un errore e la route risponde 400
   const event = stripe.webhooks.constructEvent(
     rawBody,
     signature,
     env.STRIPE_WEBHOOK_SECRET,
   );
 
-  logStripeEvent("webhook_received", { type: event.type, id: event.id });
+  logStripeEvent("webhook_received", {
+    type: event.type,
+    id: event.id,
+  });
 
   switch (event.type) {
-    case "payment_intent.succeeded": {
+    case "payment_intent.succeeded":
       await handlePaymentIntentSucceeded(event.data.object);
       break;
-    }
 
-    case "payment_intent.payment_failed": {
+    case "payment_intent.payment_failed":
       await handlePaymentIntentFailed(event.data.object);
       break;
-    }
 
     default:
       logStripeEvent("webhook_unhandled_event", { type: event.type });
@@ -51,6 +52,10 @@ const handlePaymentIntentSucceeded = async (paymentIntent: {
     paymentIntentId: paymentIntent.id,
   });
 
+  if (paymentIntent.status !== "succeeded") {
+    return;
+  }
+
   const order = await findOrderByStripePaymentIntentId(paymentIntent.id);
 
   if (!order) {
@@ -60,18 +65,25 @@ const handlePaymentIntentSucceeded = async (paymentIntent: {
     return;
   }
 
-  // Idempotenza — se già pagato non facciamo nulla
-  if (order.status === "paid") {
-    logStripeEvent("webhook_order_already_paid", {
+  // FIX: idempotenza atomica
+  const updated = await updateOrderStatusIfPending(order._id.toString());
+
+  if (!updated) {
+    logStripeEvent("webhook_order_already_processed", {
       orderId: order._id.toString(),
-      paymentIntentId: paymentIntent.id,
     });
     return;
   }
 
-  await updateOrderStatusById(order._id.toString(), "paid");
-
   const booking = await getBookingToConfirm(order.bookingId.toString());
+
+  // FIX: null safety
+  if (!booking) {
+    logStripeError("webhook_booking_not_found", {
+      bookingId: order.bookingId.toString(),
+    });
+    return;
+  }
 
   if (booking.status === "confirmed") {
     logStripeEvent("webhook_booking_already_confirmed", {
@@ -105,11 +117,9 @@ const handlePaymentIntentFailed = async (paymentIntent: {
     return;
   }
 
-  if (order.status !== "pending") {
-    return;
-  }
+  const updated = await markOrderAsFailedIfPending(order._id.toString());
 
-  await updateOrderStatusById(order._id.toString(), "failed");
+  if (!updated) return;
 
   logStripeEvent("webhook_order_marked_failed", {
     orderId: order._id.toString(),
