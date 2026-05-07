@@ -29,13 +29,11 @@ export const loginController = async (
   try {
     const { token, refreshToken, user } = await loginService(req.body);
 
-    // Access token — 3 ore
     res.cookie("token", token, {
       ...cookieOptions,
       maxAge: 3 * 60 * 60 * 1000,
     });
 
-    // Refresh token — 7 giorni
     res.cookie("refreshToken", refreshToken, {
       ...cookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -53,8 +51,8 @@ export const loginController = async (
 };
 
 export const logoutController = (req: Request, res: Response): void => {
-  // Blacklista il token Bearer se presente nell'header
   const authHeader = req.headers.authorization;
+
   if (authHeader?.startsWith("Bearer ")) {
     const token = authHeader.split(" ")[1];
     try {
@@ -63,7 +61,7 @@ export const logoutController = (req: Request, res: Response): void => {
         addToBlacklist(token, decoded.exp * 1000);
       }
     } catch {
-      // Token malformato — ignoriamo, i cookie vengono comunque rimossi
+      // Token malformato — ignoriamo, i cookie vengono rimossi comunque
     }
   }
 
@@ -96,7 +94,8 @@ export const refreshTokenController = async (
     let payload: { userId: string; purpose: string };
 
     try {
-      payload = jwt.verify(refreshToken, env.JWT_SECRET) as {
+      // Verifica con JWT_REFRESH_SECRET dedicato
+      payload = jwt.verify(refreshToken, env.JWT_REFRESH_SECRET) as {
         userId: string;
         purpose: string;
       };
@@ -136,10 +135,7 @@ export const meController = (req: Request, res: Response): void => {
     const token = req.cookies?.token;
     const user = getAuthenticatedUserFromToken(token);
 
-    res.status(200).json({
-      statusCode: 200,
-      user,
-    });
+    res.status(200).json({ statusCode: 200, user });
   } catch (error) {
     const statusCode =
       typeof error === "object" &&

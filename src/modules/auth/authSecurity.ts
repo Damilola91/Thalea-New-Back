@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { env } from "../../config/env";
 import { JwtPayload } from "../../shared/types/jwtPayload";
 import { createAppError } from "./authErrors";
 
@@ -11,14 +12,8 @@ export const comparePassword = async (
 };
 
 export const verifyAuthToken = (token: string): JwtPayload => {
-  const jwtSecret = process.env.JWT_SECRET;
-
-  if (!jwtSecret) {
-    throw createAppError("JWT_SECRET non configurato", 500);
-  }
-
   try {
-    return jwt.verify(token, jwtSecret) as JwtPayload;
+    return jwt.verify(token, env.JWT_SECRET) as JwtPayload;
   } catch {
     throw createAppError("Token non valido", 401);
   }

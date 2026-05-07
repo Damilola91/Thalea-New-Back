@@ -60,3 +60,14 @@ export const newsletterRateLimit = rateLimit({
     message: "Too many newsletter requests, please try again later",
   },
 });
+
+export const stripeWebhookRateLimit = rateLimit({
+  windowMs: 60 * 1000, // 1 minuto
+  max: 50, // Stripe può mandare burst di eventi, 50/min è sicuro
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    statusCode: 429,
+    message: "Too many webhook requests",
+  },
+});
