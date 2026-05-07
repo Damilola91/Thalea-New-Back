@@ -1,12 +1,14 @@
 import { Router, Request, Response } from "express";
 import express from "express";
 import { handleStripeWebhook } from "./stripeWebhookHandler";
+import { stripeWebhookRateLimit } from "../../middlewares/security";
 import logger from "../../shared/utils/logger/logger";
 
 const router = Router();
 
 router.post(
   "/webhook",
+  stripeWebhookRateLimit,
   express.raw({ type: "application/json" }),
   async (req: Request, res: Response): Promise<void> => {
     const signature = req.headers["stripe-signature"];
@@ -25,16 +27,9 @@ router.post(
     } catch (error) {
       const message = error instanceof Error ? error.message : "Webhook error";
 
-      logger.error({
-        scope: "stripe",
-        event: "webhook_error",
-        message,
-      });
+      logger.error({ scope: "stripe", event: "webhook_error", message });
 
-      res.status(400).json({
-        statusCode: 400,
-        message,
-      });
+      res.status(400).json({ statusCode: 400, message });
     }
   },
 );
