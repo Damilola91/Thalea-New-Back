@@ -18,13 +18,13 @@ const {
   mockFinalizeConfirmedBooking: vi.fn(),
 }));
 
-vi.mock("stripe", () => ({
-  default: vi.fn().mockImplementation(function () {
-    return {
-      webhooks: { constructEvent: mockConstructEvent },
-      balance: { retrieve: vi.fn().mockResolvedValue({}) },
-    };
-  }),
+// MOCK ESATTO DEL PATH USATO DAL FILE REALE
+vi.mock("../../../src/config/stripe", () => ({
+  stripe: {
+    webhooks: {
+      constructEvent: mockConstructEvent,
+    },
+  },
 }));
 
 vi.mock("../../../src/config/env", () => ({
@@ -52,7 +52,7 @@ vi.mock("../../../src/modules/booking/bookingConfirmation", () => ({
   finalizeConfirmedBooking: mockFinalizeConfirmedBooking,
 }));
 
-import { handleStripeWebhook } from "../../../../src/modules/stripe/stripeWebhookHandler";
+import { handleStripeWebhook } from "../../../src/modules/stripe/stripeWebhookHandler";
 
 const mockRawBody = Buffer.from("{}");
 const mockSignature = "stripe-sig-test";
@@ -66,28 +66,42 @@ describe("handleStripeWebhook — payment_intent.succeeded", () => {
     mockConstructEvent.mockReturnValue({
       type: "payment_intent.succeeded",
       id: "evt_001",
-      data: { object: { id: "pi_001", status: "succeeded" } },
+      data: {
+        object: {
+          id: "pi_001",
+          status: "succeeded",
+        },
+      },
     });
+
     mockFindOrder.mockResolvedValue({
       _id: { toString: () => "order-001" },
       bookingId: { toString: () => "booking-001" },
       status: "pending",
     });
+
     mockUpdateOrderStatusIfPending.mockResolvedValue(true);
+
     mockGetBookingToConfirm.mockResolvedValue({
       _id: { toString: () => "booking-001" },
       status: "pending",
     });
+
     mockConfirmBookingRecord.mockResolvedValue({
       _id: { toString: () => "booking-001" },
       status: "confirmed",
     });
+
     mockFinalizeConfirmedBooking.mockResolvedValue({});
 
     await handleStripeWebhook(mockRawBody, mockSignature);
 
+    expect(mockConstructEvent).toHaveBeenCalled();
+
     expect(mockUpdateOrderStatusIfPending).toHaveBeenCalledWith("order-001");
+
     expect(mockConfirmBookingRecord).toHaveBeenCalled();
+
     expect(mockFinalizeConfirmedBooking).toHaveBeenCalled();
   });
 
@@ -95,13 +109,20 @@ describe("handleStripeWebhook — payment_intent.succeeded", () => {
     mockConstructEvent.mockReturnValue({
       type: "payment_intent.succeeded",
       id: "evt_002",
-      data: { object: { id: "pi_002", status: "succeeded" } },
+      data: {
+        object: {
+          id: "pi_002",
+          status: "succeeded",
+        },
+      },
     });
+
     mockFindOrder.mockResolvedValue({
       _id: { toString: () => "order-002" },
       bookingId: { toString: () => "booking-002" },
       status: "paid",
     });
+
     mockUpdateOrderStatusIfPending.mockResolvedValue(false);
 
     await handleStripeWebhook(mockRawBody, mockSignature);
@@ -113,13 +134,20 @@ describe("handleStripeWebhook — payment_intent.succeeded", () => {
     mockConstructEvent.mockReturnValue({
       type: "payment_intent.succeeded",
       id: "evt_003",
-      data: { object: { id: "pi_999", status: "succeeded" } },
+      data: {
+        object: {
+          id: "pi_999",
+          status: "succeeded",
+        },
+      },
     });
+
     mockFindOrder.mockResolvedValue(null);
 
     await expect(
       handleStripeWebhook(mockRawBody, mockSignature),
     ).resolves.not.toThrow();
+
     expect(mockUpdateOrderStatusIfPending).not.toHaveBeenCalled();
   });
 });
@@ -129,12 +157,18 @@ describe("handleStripeWebhook — payment_intent.payment_failed", () => {
     mockConstructEvent.mockReturnValue({
       type: "payment_intent.payment_failed",
       id: "evt_004",
-      data: { object: { id: "pi_fail_001" } },
+      data: {
+        object: {
+          id: "pi_fail_001",
+        },
+      },
     });
+
     mockFindOrder.mockResolvedValue({
       _id: { toString: () => "order-003" },
       status: "pending",
     });
+
     mockMarkOrderAsFailedIfPending.mockResolvedValue(true);
 
     await handleStripeWebhook(mockRawBody, mockSignature);
@@ -151,6 +185,6 @@ describe("handleStripeWebhook — firma non valida", () => {
 
     await expect(
       handleStripeWebhook(mockRawBody, "firma-invalida"),
-    ).rejects.toThrow("Unable to extract timestamp");
+    ).rejects.toThrow("Unable to extract timestamp and signatures from header");
   });
 });

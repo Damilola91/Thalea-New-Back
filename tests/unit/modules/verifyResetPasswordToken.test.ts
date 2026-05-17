@@ -7,7 +7,7 @@ beforeAll(() => {
 });
 
 // Import dinamico dopo aver settato env
-const getModule = () => import("../../../../src/modules/user/userSecurity");
+const getModule = () => import("../../../src/modules/user/userSecurity");
 
 describe("verifyResetPasswordToken", () => {
   it("accetta un token valido con purpose reset", async () => {
