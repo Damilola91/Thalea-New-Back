@@ -1,10 +1,22 @@
+// orderCreation.ts
+
 import { findRawBookingById } from "../booking/bookingRepository";
+
 import { CreatePaymentOrderDto } from "./orderDto";
+
 import { createAppError } from "./orderErrors";
+
 import { mapOrderResponse } from "./orderMapper";
+
 import { createStripePaymentIntentForOrder } from "./orderPayment";
-import { createOrder } from "./orderRepository";
+
+import {
+  createOrder,
+  findOrderByStripePaymentIntentId,
+} from "./orderRepository";
+
 import { createPaymentOrderSchema } from "./orderSchemas";
+
 import { IOrderResponse } from "./orderTypes";
 
 export const createPaymentOrder = async (
@@ -27,14 +39,23 @@ export const createPaymentOrder = async (
     throw createAppError("Prenotazione non trovata", 404);
   }
 
+  if (booking.status === "cancelled") {
+    throw createAppError("La prenotazione è stata cancellata", 400);
+  }
+
+  if (booking.status === "confirmed") {
+    throw createAppError("La prenotazione è già confermata", 400);
+  }
+
   if (!booking.totalPrice || booking.totalPrice <= 0) {
     throw createAppError("Il prezzo totale non è valido", 400);
   }
 
   const amount = Math.round(Number(booking.totalPrice) * 100);
+
   const receiptEmail = booking.guestEmail;
 
-  const idempotencyKey = `order-${bookingId}-${amount}-${paymentMethod}`;
+  const idempotencyKey = `booking-${bookingId}-${amount}-${paymentMethod}`;
 
   const paymentIntent = await createStripePaymentIntentForOrder(
     amount,
@@ -42,6 +63,21 @@ export const createPaymentOrder = async (
     receiptEmail,
     idempotencyKey,
   );
+
+  const existingOrder = await findOrderByStripePaymentIntentId(
+    paymentIntent.id,
+  );
+
+  if (existingOrder) {
+    return {
+      message: "Ordine già esistente",
+      paymentIntentId: paymentIntent.id,
+      clientSecret: paymentIntent.clientSecret,
+      orderId: existingOrder._id.toString(),
+      stripeStatus: paymentIntent.status,
+      order: mapOrderResponse(existingOrder),
+    };
+  }
 
   const savedOrder = await createOrder({
     bookingId,

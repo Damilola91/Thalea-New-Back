@@ -1,40 +1,51 @@
+// bookingConfirmation.ts
+
 import { sendBookingConfirmationEmail } from "../../shared/utils/email/sendBookingConfirmationEmail";
 import { sendBookingNotificationToOwner } from "../../shared/utils/email/sendBookingNotificationToOwner";
+
 import {
   addApartmentBookedDate,
   removeApartmentBookedDateByBookingId,
 } from "../apartment/apartmentRepository";
+
 import { setBookingAsBookedLodgifyService } from "../lodgify/lodgifyService";
+
 import {
   findRawOrderById,
   updateOrderStatusById,
 } from "../order/orderRepository";
+
 import { retrieveStripePaymentIntent } from "../../shared/integrations/stripe/stripeAdapter";
+
 import { createAppError } from "./bookingErrors";
+
 import {
   getApartmentLabelFromBooking,
   mapBookingResponse,
 } from "./bookingMapper";
+
 import {
   findBookingById,
   findRawBookingById,
   updateBookingStatusById,
 } from "./bookingRepository";
+
 import { IBookingDocument, IBookingResponse } from "./bookingTypes";
 
 export const getValidatedPaymentContext = async (
   paymentIntentId: string,
   orderId: string,
 ) => {
-  // Sequenziale: prima verifica l'ordine in DB, poi chiama Stripe
-  // Evita una chiamata API a Stripe se l'ordine non esiste
   const order = await findRawOrderById(orderId);
 
   if (!order) {
     throw createAppError("Ordine non trovato", 404);
   }
 
-  // Verifica che il paymentIntentId corrisponda a quello salvato sull'ordine
+  if (order.status === "failed") {
+    throw createAppError("Pagamento fallito", 400);
+  }
+
   if (order.stripePaymentIntentId !== paymentIntentId) {
     throw createAppError("Il paymentIntentId non corrisponde all'ordine", 400);
   }
@@ -119,16 +130,22 @@ export const finalizeConfirmedBooking = async (
 
   const apartmentLabel = getApartmentLabelFromBooking(populatedBooking);
 
-  await Promise.all([
-    addApartmentBookedDate(
-      booking.apartment.toString(),
-      booking._id.toString(),
-      booking.checkIn,
-      booking.checkOut,
-    ),
-    booking.lodgifyId
-      ? setBookingAsBookedLodgifyService(booking.lodgifyId)
-      : Promise.resolve(null),
+  await addApartmentBookedDate(
+    booking.apartment.toString(),
+    booking._id.toString(),
+    booking.checkIn,
+    booking.checkOut,
+  );
+
+  if (booking.lodgifyId) {
+    try {
+      await setBookingAsBookedLodgifyService(booking.lodgifyId);
+    } catch (error) {
+      console.error("Errore sincronizzazione Lodgify:", error);
+    }
+  }
+
+  const emailResults = await Promise.allSettled([
     sendBookingConfirmationEmail({
       guestEmail: populatedBooking.guestEmail,
       guestName: populatedBooking.guestName,
@@ -139,6 +156,7 @@ export const finalizeConfirmedBooking = async (
       totalPrice: populatedBooking.totalPrice,
       bookingCode: populatedBooking.bookingCode,
     }),
+
     sendBookingNotificationToOwner({
       guestName: populatedBooking.guestName,
       guestEmail: populatedBooking.guestEmail,
@@ -150,6 +168,12 @@ export const finalizeConfirmedBooking = async (
       bookingCode: populatedBooking.bookingCode,
     }),
   ]);
+
+  for (const result of emailResults) {
+    if (result.status === "rejected") {
+      console.error("Errore invio email booking:", result.reason);
+    }
+  }
 
   return mapBookingResponse(populatedBooking);
 };
@@ -164,8 +188,17 @@ export const cancelBookingRecord = async (
     throw createAppError("Prenotazione non trovata", 404);
   }
 
+  if (booking.status === "cancelled") {
+    return {
+      message: "Prenotazione già cancellata",
+      bookingStatus: booking.status,
+      booking: mapBookingResponse(booking),
+    };
+  }
+
   const [updatedBooking] = await Promise.all([
     updateBookingStatusById(bookingId, "cancelled"),
+
     removeApartmentBookedDateByBookingId(apartmentId, bookingId),
   ]);
 
@@ -175,7 +208,9 @@ export const cancelBookingRecord = async (
 
   return {
     message: "Prenotazione cancellata correttamente",
+
     bookingStatus: updatedBooking.status,
+
     booking: mapBookingResponse(updatedBooking),
   };
 };
