@@ -10,7 +10,11 @@ import {
 } from "./bookingRepository";
 import { completeBookingSchema } from "./bookingSchemas";
 import { IBookingResponse } from "./bookingTypes";
-import { calculateNights, parseBookingDates } from "./bookingUtils";
+import {
+  calculateNights,
+  calculateTotalPrice,
+  parseBookingDates,
+} from "./bookingUtils";
 
 export const createPendingBookingRecord = async (
   data: CompleteBookingDto,
@@ -47,8 +51,10 @@ export const createPendingBookingRecord = async (
   }
 
   const nights = calculateNights(checkInDate, checkOutDate);
-  const totalPrice =
-    Math.round(nights * apartmentData.pricePerNight * 100) / 100;
+  const { accommodationPrice, cleaningFee, totalPrice } = calculateTotalPrice(
+    nights,
+    apartmentData.pricePerNight,
+  );
 
   const lodgifyBooking = await createLodgifyBookingService({
     checkIn,
@@ -69,6 +75,8 @@ export const createPendingBookingRecord = async (
     checkOut: checkOutDate,
     guestsCount,
     nights,
+    accommodationPrice,
+    cleaningFee,
     totalPrice,
     notes,
     bookingCode: uuidv4(),

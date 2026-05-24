@@ -10,6 +10,8 @@ interface CreateBookingRepositoryData {
   checkOut: Date;
   guestsCount: number;
   nights: number;
+  accommodationPrice: number;
+  cleaningFee: number;
   totalPrice: number;
   status?: "pending" | "confirmed" | "cancelled";
   notes?: string;

@@ -13,6 +13,8 @@ export interface IBooking {
   checkOut: Date;
   guestsCount: number;
   nights: number;
+  accommodationPrice: number;
+  cleaningFee: number;
   totalPrice: number;
   status: BookingStatus;
   notes?: string;
@@ -36,6 +38,8 @@ export interface IBookingResponse {
   checkOut: Date;
   guestsCount: number;
   nights: number;
+  accommodationPrice: number;
+  cleaningFee: number;
   totalPrice: number;
   status: BookingStatus;
   notes?: string;

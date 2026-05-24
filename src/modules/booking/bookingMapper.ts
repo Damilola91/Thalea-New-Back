@@ -13,6 +13,8 @@ export const mapBookingResponse = (
     checkOut: booking.checkOut,
     guestsCount: booking.guestsCount,
     nights: booking.nights,
+    accommodationPrice: booking.accommodationPrice,
+    cleaningFee: booking.cleaningFee,
     totalPrice: booking.totalPrice,
     status: booking.status,
     notes: booking.notes,
@@ -33,6 +35,5 @@ export const getApartmentLabelFromBooking = (
   ) {
     return String(booking.apartment.name);
   }
-
   return booking.apartment.toString();
 };
