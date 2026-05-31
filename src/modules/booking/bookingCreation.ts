@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
 import { findApartmentById } from "../apartment/apartmentRepository";
-import { createLodgifyBookingService } from "../lodgify/lodgifyService";
 import { CompleteBookingDto } from "./bookingDto";
 import { createAppError } from "./bookingErrors";
 import { mapBookingResponse } from "./bookingMapper";
@@ -15,6 +14,9 @@ import {
   calculateTotalPrice,
   parseBookingDates,
 } from "./bookingUtils";
+
+// Nota: la creazione su Lodgify avviene DOPO il pagamento
+// nel webhook Stripe (stripeWebhookHandler.ts → finalizeConfirmedBooking)
 
 export const createPendingBookingRecord = async (
   data: CompleteBookingDto,
@@ -56,16 +58,6 @@ export const createPendingBookingRecord = async (
     apartmentData.pricePerNight,
   );
 
-  const lodgifyBooking = await createLodgifyBookingService({
-    checkIn,
-    checkOut,
-    guestName,
-    guestEmail,
-    guestPhone,
-    guestsCount,
-    totalPrice,
-  });
-
   const savedBooking = await createBooking({
     apartment,
     guestName,
@@ -80,10 +72,6 @@ export const createPendingBookingRecord = async (
     totalPrice,
     notes,
     bookingCode: uuidv4(),
-    lodgifyId:
-      typeof lodgifyBooking === "number"
-        ? lodgifyBooking
-        : lodgifyBooking?.id || lodgifyBooking?.booking_id,
   });
 
   return mapBookingResponse(savedBooking);

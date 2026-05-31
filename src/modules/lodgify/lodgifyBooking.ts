@@ -39,35 +39,21 @@ export const createLodgifyBooking = async (
     currency_code: "EUR",
   };
 
-  const response = await lodgifyRequest(url, {
+  // lodgifyRequest restituisce già il JSON parsato
+  const response = (await lodgifyRequest(url, {
     method: "POST",
     body,
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => "");
-    throw new Error(`Errore Lodgify: ${response.status} - ${errorText}`);
-  }
-
-  return (await response.json()) as LodgifyBookingResponse;
+  })) as LodgifyBookingResponse;
+  return response;
 };
 
 export const setBookingAsBookedLodgify = async (
   lodgifyBookingId: number,
 ): Promise<Record<string, unknown>> => {
-  const response = await lodgifyRequest(
+  const response = (await lodgifyRequest(
     `https://api.lodgify.com/v1/reservation/booking/${lodgifyBookingId}/book?requestPayment=false`,
-    {
-      method: "PUT",
-    },
-  );
+    { method: "PUT" },
+  )) as Record<string, unknown>;
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      `Errore Lodgify (${response.status}): ${JSON.stringify(errorData)}`,
-    );
-  }
-
-  return (await response.json().catch(() => ({}))) as Record<string, unknown>;
+  return response;
 };

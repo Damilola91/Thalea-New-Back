@@ -61,7 +61,7 @@ export const findOverlappingBookingsForApartment = async (
 ): Promise<IBookingDocument[]> => {
   return await BookingModel.find({
     apartment: apartmentId,
-    status: { $ne: "cancelled" },
+    status: "confirmed", // solo confirmed blocca — pending non occupa le date
     $or: [{ checkIn: { $lt: checkOut }, checkOut: { $gt: checkIn } }],
   });
 };
@@ -83,6 +83,19 @@ export const updateBookingStatusById = async (
   return await BookingModel.findByIdAndUpdate(
     bookingId,
     { $set: { status } },
+    { new: true },
+  );
+};
+
+// Aggiungi questa funzione a bookingRepository.ts
+
+export const updateBookingLodgifyId = async (
+  bookingId: string,
+  lodgifyId: number,
+): Promise<IBookingDocument | null> => {
+  return await BookingModel.findByIdAndUpdate(
+    bookingId,
+    { $set: { lodgifyId } },
     { new: true },
   );
 };

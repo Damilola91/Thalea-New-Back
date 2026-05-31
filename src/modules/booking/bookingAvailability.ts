@@ -10,6 +10,7 @@ import {
 import {
   buildDateRange,
   calculateNights,
+  calculateTotalPrice,
   getDatesBetween,
 } from "./bookingUtils";
 
@@ -65,8 +66,6 @@ export const buildAvailabilityResponse = async (
     endDate,
   );
 
-  // Lodgify in errore → blocca con unavailable, non continuare
-  // Le date potrebbero essere occupate da Booking.com o altri canali
   if (lodgifyResult.available === null) {
     return {
       results: [],
@@ -82,7 +81,6 @@ export const buildAvailabilityResponse = async (
     };
   }
 
-  // Lodgify dice non disponibile → blocca subito senza toccare il DB
   if (lodgifyResult.available === false) {
     return {
       message: "Periodo non disponibile secondo il channel manager Lodgify.",
@@ -93,7 +91,6 @@ export const buildAvailabilityResponse = async (
     };
   }
 
-  // Lodgify ok → verifica anche il DB interno
   const nights = calculateNights(checkInDate, checkOutDate);
   const apartments = await findAllApartments();
 
@@ -123,10 +120,17 @@ export const buildAvailabilityResponse = async (
       (booking) => booking.apartment.toString() === apartment._id.toString(),
     );
 
+    const { accommodationPrice, cleaningFee, totalPrice } = calculateTotalPrice(
+      nights,
+      apartment.pricePerNight,
+    );
+
     return {
       apartment,
       nights,
-      totalPrice: Math.round(nights * apartment.pricePerNight * 100) / 100,
+      accommodationPrice,
+      cleaningFee,
+      totalPrice,
       guestsCount,
       checkIn: checkInDate,
       checkOut: checkOutDate,
