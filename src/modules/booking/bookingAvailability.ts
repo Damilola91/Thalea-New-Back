@@ -92,6 +92,17 @@ export const buildAvailabilityResponse = async (
   }
 
   const nights = calculateNights(checkInDate, checkOutDate);
+
+  // Minimo 3 notti
+  if (nights < 3) {
+    return {
+      message: "Il soggiorno minimo è di 3 notti.",
+      available: false,
+      source: "internal",
+      period: { startDate, endDate },
+    };
+  }
+
   const apartments = await findAllApartments();
 
   const compatibleApartments = apartments.filter(
