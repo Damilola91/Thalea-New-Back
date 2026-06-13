@@ -21,10 +21,14 @@ export const createLodgifyBooking = async (
     property_id: getLodgifyPropertyId(),
     status: "Tentative",
     bookability: "InstantBooking",
+    // Ospiti a livello root — campo corretto per API v1
+    people: data.guestsCount,
+    adults: data.guestsCount,
     rooms: [
       {
         room_type_id: getLodgifyRoomTypeId(),
         quantity: 1,
+        people: data.guestsCount,
         adults: data.guestsCount,
       },
     ],
@@ -39,7 +43,6 @@ export const createLodgifyBooking = async (
     currency_code: "EUR",
   };
 
-  // lodgifyRequest restituisce già il JSON parsato
   const response = (await lodgifyRequest(url, {
     method: "POST",
     body,
