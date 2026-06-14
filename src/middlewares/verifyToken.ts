@@ -13,17 +13,22 @@ export const verifyToken = (
   res: Response,
   next: NextFunction,
 ): void => {
+  // Legge prima dal cookie httpOnly, poi dall'header Authorization
+  const cookieToken = req.cookies?.token;
   const authHeader = req.headers.authorization;
+  const headerToken = authHeader?.startsWith("Bearer ")
+    ? authHeader.split(" ")[1]
+    : null;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  const token = cookieToken ?? headerToken;
+
+  if (!token) {
     res.status(401).json({
       statusCode: 401,
       message: "Token mancante o formato non valido",
     });
     return;
   }
-
-  const token = authHeader.split(" ")[1];
 
   const jwtSecret = process.env.JWT_SECRET;
 
