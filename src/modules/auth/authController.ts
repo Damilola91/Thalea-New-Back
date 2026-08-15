@@ -14,10 +14,13 @@ import { loginService } from "./authService";
 
 const isProduction = env.NODE_ENV === "production";
 
+// In produzione FE e BE sono su domini diversi (Vercel / Render):
+// sameSite "none" + secure true è l'unica combinazione che permette
+// l'invio dei cookie cross-site. In locale "lax" funziona su http.
 const cookieOptions = {
   httpOnly: true,
   secure: isProduction,
-  sameSite: (isProduction ? "strict" : "lax") as "strict" | "lax",
+  sameSite: (isProduction ? "none" : "lax") as "none" | "lax",
   path: "/",
 };
 
@@ -94,7 +97,6 @@ export const refreshTokenController = async (
     let payload: { userId: string; purpose: string };
 
     try {
-      // Verifica con JWT_REFRESH_SECRET dedicato
       payload = jwt.verify(refreshToken, env.JWT_REFRESH_SECRET) as {
         userId: string;
         purpose: string;
