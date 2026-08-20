@@ -10,12 +10,26 @@ const bookedDateSchema = z.object({
   }),
 });
 
+/**
+ * Voce amenity multilingua.
+ * Solo `it` è obbligatorio: le altre lingue sono opzionali e il frontend
+ * fa fallback sull'italiano quando una traduzione manca.
+ */
+const localizedTextSchema = z.object({
+  it: z.string().trim().min(1, "Il testo in italiano è obbligatorio"),
+  en: z.string().trim().optional(),
+  de: z.string().trim().optional(),
+  fr: z.string().trim().optional(),
+  es: z.string().trim().optional(),
+  zh: z.string().trim().optional(),
+});
+
 const apartmentAmenitiesSchema = z.object({
-  general: z.array(z.string()).default([]),
-  kitchen: z.array(z.string()).default([]),
-  bathroom: z.array(z.string()).default([]),
-  outdoor: z.array(z.string()).default([]),
-  laundry: z.array(z.string()).default([]),
+  general: z.array(localizedTextSchema).default([]),
+  kitchen: z.array(localizedTextSchema).default([]),
+  bathroom: z.array(localizedTextSchema).default([]),
+  outdoor: z.array(localizedTextSchema).default([]),
+  laundry: z.array(localizedTextSchema).default([]),
 });
 
 const apartmentAreaImagesSchema = z.object({

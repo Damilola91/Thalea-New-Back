@@ -4,6 +4,7 @@ import {
   IApartmentAmenities,
   IApartmentAreaImages,
   IBookedDate,
+  ILocalizedText,
 } from "./apartmentTypes";
 
 const bookedDateSchema = new Schema<IBookedDate>(
@@ -24,13 +25,29 @@ const bookedDateSchema = new Schema<IBookedDate>(
   { _id: false },
 );
 
+/**
+ * Voce multilingua: solo `it` è obbligatorio.
+ * Le altre lingue sono opzionali e il frontend fa fallback su `it`.
+ */
+const localizedTextSchema = new Schema<ILocalizedText>(
+  {
+    it: { type: String, required: true, trim: true },
+    en: { type: String, trim: true },
+    de: { type: String, trim: true },
+    fr: { type: String, trim: true },
+    es: { type: String, trim: true },
+    zh: { type: String, trim: true },
+  },
+  { _id: false },
+);
+
 const amenitiesSchema = new Schema<IApartmentAmenities>(
   {
-    general: { type: [String], default: [] },
-    kitchen: { type: [String], default: [] },
-    bathroom: { type: [String], default: [] },
-    outdoor: { type: [String], default: [] },
-    laundry: { type: [String], default: [] },
+    general: { type: [localizedTextSchema], default: [] },
+    kitchen: { type: [localizedTextSchema], default: [] },
+    bathroom: { type: [localizedTextSchema], default: [] },
+    outdoor: { type: [localizedTextSchema], default: [] },
+    laundry: { type: [localizedTextSchema], default: [] },
   },
   { _id: false },
 );

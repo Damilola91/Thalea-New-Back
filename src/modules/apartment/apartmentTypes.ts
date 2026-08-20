@@ -1,17 +1,40 @@
 import { Document, Types } from "mongoose";
 
+export const SUPPORTED_LOCALES = ["it", "en", "de", "fr", "es", "zh"] as const;
+export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
+
+/**
+ * Singola voce multilingua.
+ * `it` è obbligatorio e funge da fallback quando una traduzione manca.
+ */
+export interface ILocalizedText {
+  it: string;
+  en?: string;
+  de?: string;
+  fr?: string;
+  es?: string;
+  zh?: string;
+}
+
 export interface IBookedDate {
   _id?: Types.ObjectId;
   start: Date;
   end: Date;
 }
 
+export type AmenityCategory =
+  | "general"
+  | "kitchen"
+  | "bathroom"
+  | "outdoor"
+  | "laundry";
+
 export interface IApartmentAmenities {
-  general: string[];
-  kitchen: string[];
-  bathroom: string[];
-  outdoor: string[];
-  laundry: string[];
+  general: ILocalizedText[];
+  kitchen: ILocalizedText[];
+  bathroom: ILocalizedText[];
+  outdoor: ILocalizedText[];
+  laundry: ILocalizedText[];
 }
 
 export interface IApartmentAreaImages {
